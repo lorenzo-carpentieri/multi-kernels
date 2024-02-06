@@ -1,0 +1,1 @@
+The adaptive inverse-distance weighting interpolation method can effectively suppress the time required for interpolation while maintaining an approaching accuracy with the improved inverse-distance weighting interpolation method and thus has a higher interpolation efficiency.

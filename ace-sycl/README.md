@@ -1,0 +1,1 @@
+ace is an implementation of the Alternating Conditional Expectation (ACE) algorithm [Breiman85], which can be used to find otherwise difficult-to-find relationships between predictors and responses and as a multivariate regression tool. (Simulation)
