@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
 
   Profiler<double> synergy_profiler(q, events, start);
   t = 0;
-  std::cout << "iteration,kernel_name,times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
+  std::cout << "iteration,kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
   while (t <= num_steps)
   {
     int i = 0;
@@ -490,13 +490,14 @@ int main(int argc, char *argv[])
       std::string s = kernel_names[i + (t * 7)];
       std::cout << t << ", "
                 << s << ", "
+                << q.get_synergy_device().get_uncore_frequency() << ", "
+                << q.get_synergy_device().get_core_frequency() << ", "
                 << synergy_profiler.get_kernel_execution_times()[i + (t * 7)] << ", "
                 << synergy_profiler.get_kernel_execution_energies()[i + (t * 7)] << ", "
                 << synergy_profiler.get_real_execution_time() << ", "
                 << synergy_profiler.get_total_kernel_execution_times() << ", "
                 << synergy_profiler.get_device_energy() << ", "
-                << synergy_profiler.get_total_kernel_execution_energies()
-                << std::endl;
+                << synergy_profiler.get_total_kernel_execution_energies() << std::endl;
       i++;
     }
     t++;
