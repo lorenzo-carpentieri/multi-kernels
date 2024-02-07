@@ -106,6 +106,11 @@ public:
         return m_profData.totalKernelEnergy;
     }
 
+    inline T get_device_energy() const
+    {
+        return m_profData.totalDeviceEnergy;
+    }
+
 private:
     struct profiling_data
     {

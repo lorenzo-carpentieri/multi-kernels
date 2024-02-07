@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
 
   Profiler<double> synergy_profiler(q, events, start);
   t = 0;
-
+  std::cout << "iteration,kernel_name,times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
   while (t <= num_steps)
   {
     int i = 0;
@@ -490,26 +490,27 @@ int main(int argc, char *argv[])
       std::string s = kernel_names[i + (t * 7)];
       std::cout << t << ", "
                 << s << ", "
-                << synergy_profiler.get_kernel_execution_times()[i + (t * 7)]
-                << ", "
-                << synergy_profiler.get_kernel_execution_energies()[i + (t * 7)]
+                << synergy_profiler.get_kernel_execution_times()[i + (t * 7)] << ", "
+                << synergy_profiler.get_kernel_execution_energies()[i + (t * 7)] << ", "
+                << synergy_profiler.get_real_execution_time() << ", "
+                << synergy_profiler.get_total_kernel_execution_times() << ", "
+                << synergy_profiler.get_device_energy() << ", "
+                << synergy_profiler.get_total_kernel_execution_energies()
                 << std::endl;
       i++;
     }
     t++;
     // std::cout << "\n";
   }
-#ifdef SYNERGY_DEVICE_PROFILING
-  std::cout << "Device energy consumption: " << q.device_energy_consumption() << " j\n";
-#endif
+
   auto end = std::chrono::steady_clock::now();
   // auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
   // printf("Total kernel execution time: %.3f (ms)\n", time * 1e-6f);
-  std::cout << "Total real time: " << synergy_profiler.get_real_execution_time() << std::endl;
-  std::cout << "Total submit time: " << synergy_profiler.get_total_command_group_submission_times() << std::endl;
-  std::cout << "Total kernel time: " << synergy_profiler.get_total_kernel_execution_times() << std::endl;
+  // std::cout << "Total real time: " << synergy_profiler.get_real_execution_time() << std::endl;
+  // std::cout << "Total submit time: " << synergy_profiler.get_total_command_group_submission_times() << std::endl;
+  // std::cout << "Total kernel time: " << synergy_profiler.get_total_kernel_execution_times() << std::endl;
 
-  std::cout << "Total energy kernel time: " << synergy_profiler.get_total_kernel_execution_energies() << std::endl;
+  // std::cout << "Total energy kernel time: " << synergy_profiler.get_total_kernel_execution_energies() << std::endl;
 
   q.memcpy(phi_host, d_phiold, vol_in_bytes);
   q.memcpy(u_host, d_uold, vol_in_bytes);
