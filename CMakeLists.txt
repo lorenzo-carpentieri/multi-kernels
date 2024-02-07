@@ -1,0 +1,91 @@
+cmake_minimum_required(VERSION 3.5)
+project(multi-kernels)
+
+# set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "CMake Build Type" FORCE)
+endif()
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Due to CMake limitations, hipSYCL requires C++ standard to be set manually
+set(CMAKE_SYCL_FLAGS "${CMAKE_SYCL_FLAGS} -std=c++17")
+
+if(CMAKE_GENERATOR STREQUAL "Ninja")
+    set(CMAKE_SYCL_FLAGS "${CMAKE_SYCL_FLAGS} -fdiagnostics-color=always")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+    set(COMPUTECPP_USER_FLAGS "${COMPUTECPP_USER_FLAGS} -fdiagnostics-color=always")
+endif()
+
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
+option(ENABLED_SYNERGY "Enable SYnergy support" OFF)
+option(ENABLED_TIME_EVENT_PROFILING "Enable time profiling with sycl event" OFF)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
+
+if(DPCPP_WITH_CUDA_BACKEND)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=nvptx64-nvidia-cuda")
+
+    set(CUDA_ARCH "" CACHE STRING "CUDA device architecture e.g. sm_70")
+
+    if(NOT CUDA_ARCH STREQUAL "")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend --cuda-gpu-arch=${CUDA_ARCH}")
+    endif()
+endif()
+
+if(DPCPP_WITH_ROCM_BACKEND)
+    set(ROCM_ARCH "" CACHE STRING "ROCm device architecture e.g. gfx908")
+
+    if(NOT ROCM_ARCH STREQUAL "")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=amd_gpu_${ROCM_ARCH}")
+    endif()
+endif()
+
+if(DPCPP_WITH_LZ_BACKEND)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl-targets=spir64_gen")
+
+    set(LZ_ARCH "" CACHE STRING "Level Zero device architecture e.g. acm-g10")
+
+    if(NOT LZ_ARCH STREQUAL "")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xsycl-target-backend \"-device ${LZ_ARCH}\"")
+    endif()
+endif()
+
+set(benchmarks
+    ace-sycl/main.cpp
+)
+
+# Setting variables
+foreach(benchmark IN LISTS benchmarks)
+    get_filename_component(target ${benchmark} NAME_WE)
+
+    add_executable(${target} ${benchmark})
+
+    if(ENABLED_SYNERGY)
+        target_compile_definitions(${target} PUBLIC __ENABLED_SYNERGY)
+        target_link_libraries(${target} PUBLIC synergy)
+    endif()
+
+    if(ENABLED_TIME_EVENT_PROFILING)
+        target_compile_definitions(${target} PUBLIC SYCL_BENCH_ENABLE_QUEUE_PROFILING=1)
+    endif()
+
+    target_compile_definitions(${target} PRIVATE __DPCPP__)
+
+    install(TARGETS ${target} RUNTIME DESTINATION bin/benchmarks/)
+    get_filename_component(dir ${benchmark} DIRECTORY)
+    set_property(TARGET ${target} PROPERTY FOLDER ${dir})
+endforeach(benchmark)
+
+# The "compiletime" target should only be used in the context of the compile time evaluation script
+# set_target_properties(compiletime PROPERTIES EXCLUDE_FROM_ALL 1)
+if(ENABLED_SYNERGY)
+    add_subdirectory(SYnergy)
+endif()
+
+# install(PROGRAMS bin/run-suite DESTINATION bin/)

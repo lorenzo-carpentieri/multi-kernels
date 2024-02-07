@@ -37,7 +37,7 @@ Domain::Domain(Int_t numRanks, Index_t colLoc,
     cpu_selector dev_sel;
 #endif
     // move assignment
-   device_queue = cl::sycl::queue(dev_sel);
+   device_queue = sycl::queue(dev_sel);
 
    Index_t edgeElems = nx ;
    Index_t edgeNodes = edgeElems+1 ;

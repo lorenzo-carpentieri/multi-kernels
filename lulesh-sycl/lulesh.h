@@ -540,7 +540,7 @@ class Domain {
    Index_t m_planeMin, m_planeMax ;
 
    // A SYCL queue
-   cl::sycl::queue device_queue; 
+   sycl::queue device_queue; 
 
 } ;
 

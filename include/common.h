@@ -1,7 +1,7 @@
 #ifndef COMMON_
 #define COMMON_
 
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 
 using namespace cl::sycl;
 constexpr access::mode sycl_read       = access::mode::read;
