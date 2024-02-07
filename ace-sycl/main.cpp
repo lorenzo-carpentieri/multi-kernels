@@ -504,13 +504,6 @@ int main(int argc, char *argv[])
   }
 
   auto end = std::chrono::steady_clock::now();
-  // auto time = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
-  // printf("Total kernel execution time: %.3f (ms)\n", time * 1e-6f);
-  // std::cout << "Total real time: " << synergy_profiler.get_real_execution_time() << std::endl;
-  // std::cout << "Total submit time: " << synergy_profiler.get_total_command_group_submission_times() << std::endl;
-  // std::cout << "Total kernel time: " << synergy_profiler.get_total_kernel_execution_times() << std::endl;
-
-  // std::cout << "Total energy kernel time: " << synergy_profiler.get_total_kernel_execution_energies() << std::endl;
 
   q.memcpy(phi_host, d_phiold, vol_in_bytes);
   q.memcpy(u_host, d_uold, vol_in_bytes);
@@ -526,7 +519,6 @@ int main(int argc, char *argv[])
 
   auto offload_end = std::chrono::steady_clock::now();
   auto offload_time = std::chrono::duration_cast<std::chrono::nanoseconds>(offload_end - offload_start).count();
-  printf("Offload time: %.3f (ms)\n", offload_time * 1e-6f);
 
 #ifdef VERIFY
   bool ok = true;
