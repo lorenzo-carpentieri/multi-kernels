@@ -388,15 +388,15 @@ int main(int argc, char *argv[])
   int t = 0;
 
   q.wait();
-  auto start = wall_clock_t::now();
+  auto start = synergy::wall_clock_t::now();
   std::vector<sycl::event> events;
-  std::vector<time_point_t> start_times;
+  std::vector<synergy::time_point_t> start_times;
   std::vector<std::string> kernel_names;
 
   while (t <= num_steps)
   {
     kernel_names.push_back("calculateForce");
-    start_times.push_back(wall_clock_t::now());
+    start_times.push_back(synergy::wall_clock_t::now());
     events.push_back(q.submit([&](sycl::handler &cgh)
                               { cgh.parallel_for<class calc_force>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
@@ -408,7 +408,6 @@ int main(int argc, char *argv[])
                                                      item); }); }));
 
     kernel_names.push_back("allenCahn");
-    start_times.push_back(wall_clock_t::now());
     sycl::event e2 = q.submit([&](sycl::handler &cgh)
                               { cgh.parallel_for<class allen_cahn>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
@@ -424,7 +423,6 @@ int main(int argc, char *argv[])
     events.push_back(e2);
 
     kernel_names.push_back("boundaryConditionsPhi");
-    start_times.push_back(wall_clock_t::now());
     sycl::event e3 = q.submit([&](sycl::handler &cgh)
                               { cgh.parallel_for<class bc_phi>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
@@ -432,7 +430,6 @@ int main(int argc, char *argv[])
     events.push_back(e3);
 
     kernel_names.push_back("thermalEquation");
-    start_times.push_back(wall_clock_t::now());
     sycl::event e4 = q.submit([&](sycl::handler &cgh)
                               { cgh.parallel_for<class thermal_equation>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
@@ -445,7 +442,6 @@ int main(int argc, char *argv[])
     events.push_back(e4);
 
     kernel_names.push_back("boundaryConditionsU");
-    start_times.push_back(wall_clock_t::now());
     sycl::event e5 = q.submit([&](sycl::handler &cgh)
                               { cgh.parallel_for<class bc_u>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
@@ -454,7 +450,6 @@ int main(int argc, char *argv[])
     events.push_back(e5);
 
     kernel_names.push_back("swapGrid_1");
-    start_times.push_back(wall_clock_t::now());
     sycl::event e6 = q.submit([&](sycl::handler &cgh)
                               { cgh.parallel_for<class swap_phi>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
@@ -462,7 +457,6 @@ int main(int argc, char *argv[])
     events.push_back(e6);
 
     kernel_names.push_back("swapGrid_2");
-    start_times.push_back(wall_clock_t::now());
     sycl::event e7 = q.submit([&](sycl::handler &cgh)
                               { cgh.parallel_for<class swap_u>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)

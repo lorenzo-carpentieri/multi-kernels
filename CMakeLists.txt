@@ -57,7 +57,8 @@ if(DPCPP_WITH_LZ_BACKEND)
 endif()
 
 set(benchmarks
-    ace-sycl/main.cpp
+    ace-sycl/ace_main.cpp
+    aop-sycl/aop_main.cpp
 )
 
 # Setting variables
