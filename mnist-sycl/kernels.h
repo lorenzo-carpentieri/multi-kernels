@@ -1,3 +1,4 @@
+#include <vector>
 #include "layer.h"
 
 // Constructor
@@ -8,8 +9,8 @@ Layer::Layer (sycl::queue &q, int M, int N, int O)
   this->O = O;
   this->q = q;
 
-  float h_bias[N];
-  float h_weight[N*M];
+  std::vector<float> h_bias(N);
+  std::vector<float> h_weight(N*M);
 
   for (int i = 0; i < N; ++i) {
     h_bias[i] = 0.5f - float(rand()) / float(RAND_MAX);
@@ -26,8 +27,8 @@ Layer::Layer (sycl::queue &q, int M, int N, int O)
   d_preact = sycl::malloc_device<float>(O, q);
   d_weight = sycl::malloc_device<float>(M * N, q);
 
-  q.memcpy(bias, h_bias, sizeof(float) * N);
-  q.memcpy(weight, h_weight, sizeof(float) * M * N);
+  q.memcpy(bias, h_bias.data(), sizeof(float) * N);
+  q.memcpy(weight, h_weight.data(), sizeof(float) * M * N);
 }
 
 // Send data one row from dataset to the GPU

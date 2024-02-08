@@ -60,6 +60,7 @@ set(benchmarks
     ace-sycl/ace_main.cpp
     aop-sycl/aop_main.cpp
     srad-sycl/srad_main.cpp
+    mnist-sycl/mnist_main.cpp
 )
 
 # Copy file
@@ -68,8 +69,29 @@ add_custom_command(
   COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/srad-sycl/input.pgm ${CMAKE_CURRENT_BINARY_DIR}/input.pgm
   DEPENDS ${CMAKE_SOURCE_DIR}/srad-sycl/input.pgm
 )
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/train-images.idx3-ubyte
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/mnist-sycl/train-images.idx3-ubyte ${CMAKE_CURRENT_BINARY_DIR}/train-images.idx3-ubyte
+  DEPENDS ${CMAKE_SOURCE_DIR}/mnist-sycl/train-images.idx3-ubyte
+)
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/train-labels.idx1-ubyte
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/mnist-sycl/train-labels.idx1-ubyte ${CMAKE_CURRENT_BINARY_DIR}/train-labels.idx1-ubyte
+  DEPENDS ${CMAKE_SOURCE_DIR}/mnist-sycl/train-labels.idx1-ubyte
+)
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/t10k-images.idx3-ubyte
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/mnist-sycl/t10k-images.idx3-ubyte ${CMAKE_CURRENT_BINARY_DIR}/t10k-images.idx3-ubyte
+  DEPENDS ${CMAKE_SOURCE_DIR}/mnist-sycl/t10k-images.idx3-ubyte
+)
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/t10k-labels.idx1-ubyte
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/mnist-sycl/t10k-labels.idx1-ubyte ${CMAKE_CURRENT_BINARY_DIR}/t10k-labels.idx1-ubyte
+  DEPENDS ${CMAKE_SOURCE_DIR}/mnist-sycl/t10k-labels.idx1-ubyte
+)
+
 add_custom_target(copy_scripts ALL
-  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/input.pgm
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/input.pgm ${CMAKE_CURRENT_BINARY_DIR}/train-images.idx3-ubyte ${CMAKE_CURRENT_BINARY_DIR}/train-labels.idx1-ubyte ${CMAKE_CURRENT_BINARY_DIR}/t10k-images.idx3-ubyte ${CMAKE_CURRENT_BINARY_DIR}/t10k-labels.idx1-ubyte
 )
 
 # Setting variables
