@@ -59,6 +59,17 @@ endif()
 set(benchmarks
     ace-sycl/ace_main.cpp
     aop-sycl/aop_main.cpp
+    srad-sycl/srad_main.cpp
+)
+
+# Copy file
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/input.pgm
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/srad-sycl/input.pgm ${CMAKE_CURRENT_BINARY_DIR}/input.pgm
+  DEPENDS ${CMAKE_SOURCE_DIR}/srad-sycl/input.pgm
+)
+add_custom_target(copy_scripts ALL
+  DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/input.pgm
 )
 
 # Setting variables

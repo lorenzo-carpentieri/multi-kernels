@@ -1,11 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "./main.h"
-#include "./util/graphics/graphics.h"
-#include "./util/graphics/resize.h"
-#include "./util/timer/timer.h"
+#include <synergy.hpp>
+#include <map>
+#include "./srad_main.hpp"
+#include "./graphics.hpp"
+#include "./resize.hpp"
+#include "./timer.hpp"
 
 int main(int argc, char* argv []) {
+  using time_point_t = std::chrono::high_resolution_clock::time_point;
+
+  std::vector<sycl::event> event_list;
+  std::vector<std::string> kernel_names;
+  std::vector<time_point_t> start_times;
+  sycl::event e;
 
   // time
   long long time0;
@@ -89,12 +97,12 @@ int main(int argc, char* argv []) {
   //   READ IMAGE (SIZE OF IMAGE HAS TO BE KNOWN)
   //================================================================================80
 
-  image_ori_rows = 502;
-  image_ori_cols = 458;
+  image_ori_rows = 512;
+  image_ori_cols = 512;
   image_ori_elem = image_ori_rows * image_ori_cols;
   image_ori = (FP*)malloc(sizeof(FP) * image_ori_elem);
 
-  const char* input_image_path = "../data/srad/image.pgm";
+  const char* input_image_path = "./input.pgm";
   if ( !read_graphics( input_image_path, image_ori, image_ori_rows, image_ori_cols, 1) ) {
     printf("ERROR: failed to read input image at %s\n", input_image_path);
     if (image_ori != NULL) free(image_ori);
@@ -150,11 +158,12 @@ int main(int argc, char* argv []) {
   jW[0]    = 0;                             // changes IMAGE leftmost column index from -1 to 0
   jE[Nc-1] = Nc-1;                          // changes IMAGE rightmost column index from Nc to Nc-1
 
-#ifdef USE_GPU
-  sycl::queue q(sycl::gpu_selector_v, sycl::property::queue::in_order());
-#else
-  sycl::queue q(sycl::cpu_selector_v, sycl::property::queue::in_order());
-#endif
+  synergy::queue q(sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling(), sycl::property::queue::in_order()});
+// #ifdef USE_GPU
+//   synergy::queue q(sycl::gpu_selector_v, sycl::property::queue::in_order());
+// #else
+//   synergy::queue q(sycl::cpu_selector_v, sycl::property::queue::in_order());
+// #endif
 
   // allocate memory for derivatives
   FP *d_dN = sycl::malloc_device<FP>(Ne, q);
@@ -202,30 +211,38 @@ int main(int argc, char* argv []) {
   //================================================================================80
   //   COPY INPUT TO GPU
   //================================================================================80
-  q.memcpy(d_I, image, mem_size).wait();
+  q.memcpy(d_I, image, mem_size);
+  q.wait_and_throw();
 
   time6 = get_time();
 
   sycl::range<1> gws (global_work_size);
   sycl::range<1> lws (local_work_size);
 
-  q.submit([&](sycl::handler& cgh) {
+  e = q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class extract>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       #include "kernel_extract.sycl"
     });
-  }).wait();
+  });
+  event_list.push_back(e);
+  kernel_names.push_back("extract");
+  start_times.push_back(std::chrono::high_resolution_clock::now());
+  e.wait();
 
   time7 = get_time();
 
   for (iter=0; iter<niter; iter++){ // do for the number of iterations input parameter
     // Prepare kernel
-    q.submit([&](sycl::handler& cgh) {
+    e = q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class prepare>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         #include "kernel_prepare.sycl"
       });
     });
+    event_list.push_back(e);
+    kernel_names.push_back("prepare");
+    start_times.push_back(std::chrono::high_resolution_clock::now());
 
     blocks_work_size2 = blocks_work_size;  // original number of blocks
     global_work_size2 = global_work_size;
@@ -236,14 +253,18 @@ int main(int argc, char* argv []) {
 
       sycl::range<1> gws2 (global_work_size2);
 
-      q.submit([&](sycl::handler& cgh) {
+      e = q.submit([&](sycl::handler& cgh) {
         sycl::local_accessor<FP, 1> d_psum (lws, cgh);
         sycl::local_accessor<FP, 1> d_psum2 (lws, cgh);
         cgh.parallel_for<class reduce>(
           sycl::nd_range<1>(gws2, lws), [=] (sycl::nd_item<1> item) {
           #include "kernel_reduce.sycl"
         });
-      }).wait();
+      });
+      event_list.push_back(e);
+      kernel_names.push_back("reduce");
+      start_times.push_back(std::chrono::high_resolution_clock::now());
+      e.wait();
 
       // update execution parameters
       no = blocks_work_size2;
@@ -274,19 +295,25 @@ int main(int argc, char* argv []) {
     q0sqr = varROI / meanROI2; // gets standard deviation of ROI
 
     // set arguments that were uptaded in this loop
-    q.submit([&](sycl::handler& cgh) {
+    e = q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class srad>(
         sycl::nd_range<1>(gws, lws) , [=] (sycl::nd_item<1> item) {
         #include "kernel_srad.sycl"
       });
     });
+    event_list.push_back(e);
+    kernel_names.push_back("srad");
+    start_times.push_back(std::chrono::high_resolution_clock::now());
 
-    q.submit([&](sycl::handler& cgh) {
+    e = q.submit([&](sycl::handler& cgh) {
       cgh.parallel_for<class srad2>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         #include "kernel_srad2.sycl"
       });
     });
+    event_list.push_back(e);
+    kernel_names.push_back("srad2");
+    start_times.push_back(std::chrono::high_resolution_clock::now());
   }
 
   q.wait();
@@ -295,12 +322,16 @@ int main(int argc, char* argv []) {
 
   //   Compress Kernel - SCALE IMAGE UP FROM 0-1 TO 0-255 AND COMPRESS
 
-  q.submit([&](sycl::handler& cgh) {
+  e = q.submit([&](sycl::handler& cgh) {
     cgh.parallel_for<class compress>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       #include "kernel_compress.sycl"
     });
-  }).wait();
+  });
+  event_list.push_back(e);
+  kernel_names.push_back("compress");
+  start_times.push_back(std::chrono::high_resolution_clock::now());
+  e.wait();
 
   time9 = get_time();
 
@@ -346,31 +377,38 @@ int main(int argc, char* argv []) {
 
   //  DISPLAY TIMING
 
-  printf("Time spent in different stages of the application:\n");
-  printf("%15.12f s, %15.12f %% : SETUP VARIABLES\n",
-      (float) (time1-time0) / 1000000, (float) (time1-time0) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : READ COMMAND LINE PARAMETERS\n",
-      (float) (time2-time1) / 1000000, (float) (time2-time1) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : READ IMAGE FROM FILE\n",
-      (float) (time3-time2) / 1000000, (float) (time3-time2) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : RESIZE IMAGE\n",
-      (float) (time4-time3) / 1000000, (float) (time4-time3) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : GPU DRIVER INIT, CPU/GPU SETUP, MEMORY ALLOCATION\n",
-      (float) (time5-time4) / 1000000, (float) (time5-time4) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : COPY DATA TO CPU->GPU\n",
-      (float) (time6-time5) / 1000000, (float) (time6-time5) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : EXTRACT IMAGE\n",
-      (float) (time7-time6) / 1000000, (float) (time7-time6) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : COMPUTE (%d iterations)\n",
-      (float) (time8-time7) / 1000000, (float) (time8-time7) / (float) (time12-time0) * 100, niter);
-  printf("%15.12f s, %15.12f %% : COMPRESS IMAGE\n",
-      (float) (time9-time8) / 1000000, (float) (time9-time8) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : COPY DATA TO GPU->CPU\n",
-      (float) (time10-time9) / 1000000, (float) (time10-time9) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : SAVE IMAGE INTO FILE\n",
-      (float) (time11-time10) / 1000000, (float) (time11-time10) / (float) (time12-time0) * 100);
-  printf("%15.12f s, %15.12f %% : FREE MEMORY\n",
-      (float) (time12-time11) / 1000000, (float) (time12-time11) / (float) (time12-time0) * 100);
-  printf("Total time:\n");
-  printf("%.12f s\n", (float) (time12-time0) / 1000000);
+  // printf("Time spent in different stages of the application:\n");
+  // printf("%15.12f s, %15.12f %% : SETUP VARIABLES\n",
+  //     (float) (time1-time0) / 1000000, (float) (time1-time0) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : READ COMMAND LINE PARAMETERS\n",
+  //     (float) (time2-time1) / 1000000, (float) (time2-time1) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : READ IMAGE FROM FILE\n",
+  //     (float) (time3-time2) / 1000000, (float) (time3-time2) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : RESIZE IMAGE\n",
+  //     (float) (time4-time3) / 1000000, (float) (time4-time3) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : GPU DRIVER INIT, CPU/GPU SETUP, MEMORY ALLOCATION\n",
+  //     (float) (time5-time4) / 1000000, (float) (time5-time4) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : COPY DATA TO CPU->GPU\n",
+  //     (float) (time6-time5) / 1000000, (float) (time6-time5) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : EXTRACT IMAGE\n",
+  //     (float) (time7-time6) / 1000000, (float) (time7-time6) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : COMPUTE (%d iterations)\n",
+  //     (float) (time8-time7) / 1000000, (float) (time8-time7) / (float) (time12-time0) * 100, niter);
+  // printf("%15.12f s, %15.12f %% : COMPRESS IMAGE\n",
+  //     (float) (time9-time8) / 1000000, (float) (time9-time8) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : COPY DATA TO GPU->CPU\n",
+  //     (float) (time10-time9) / 1000000, (float) (time10-time9) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : SAVE IMAGE INTO FILE\n",
+  //     (float) (time11-time10) / 1000000, (float) (time11-time10) / (float) (time12-time0) * 100);
+  // printf("%15.12f s, %15.12f %% : FREE MEMORY\n",
+  //     (float) (time12-time11) / 1000000, (float) (time12-time11) / (float) (time12-time0) * 100);
+  // printf("Total time:\n");
+  // printf("%.12f s\n", (float) (time12-time0) / 1000000);
+
+  synergy::Profiler<double> synergy_profiler {q, event_list, start_times[0]};
+  std::cout << "kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
+  for (int i = 0; i < event_list.size(); i++) {
+    std::cout << kernel_names[i] << ",";
+    synergy_profiler.print_all_profiling_info(i);
+  }
 }

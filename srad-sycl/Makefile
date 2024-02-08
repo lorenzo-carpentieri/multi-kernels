@@ -75,27 +75,27 @@ endif
 # Targets to Build
 #===============================================================================
 
-./srad:	./main.o \
+./srad:	./srad_main.o \
 	./util/graphics/graphics.o \
 	./util/graphics/resize.o \
 	./util/timer/timer.o
-	$(CC) $(CFLAGS)	./main.o \
+	$(CC) $(CFLAGS)	./srad_main.o \
 		./util/graphics/graphics.o \
 		./util/graphics/resize.o \
 		./util/timer/timer.o \
 		-lm \
 		$(LDFLAGS) -o srad
 
-./main.o:./main.cpp ./main.h \
+./srad_main.o:./srad_main.cpp ./srad_main.h \
 	kernel_compress.sycl \
 	kernel_extract.sycl \
 	kernel_prepare.sycl \
 	kernel_reduce.sycl \
 	kernel_srad.sycl \
 	kernel_srad2.sycl 
-	$(CC) $(CFLAGS) $(KERNEL_DIM) ./main.cpp \
+	$(CC) $(CFLAGS) $(KERNEL_DIM) ./srad_main.cpp \
 		-c \
-		-o ./main.o \
+		-o ./srad_main.o \
 		-O3
 
 ./util/graphics/graphics.o:./util/graphics/graphics.h ./util/graphics/graphics.c
