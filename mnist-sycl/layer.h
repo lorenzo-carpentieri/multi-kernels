@@ -9,7 +9,7 @@ class Layer {
   public:
     int M, N, O;
 
-    sycl::queue q;
+    synergy::queue q;
 
     float *output;
     float *preact;
@@ -21,7 +21,7 @@ class Layer {
     float *d_preact;
     float *d_weight;
 
-    Layer(sycl::queue &Q, int M, int N, int O);
+    Layer(synergy::queue &Q, int M, int N, int O);
 
     ~Layer();
 

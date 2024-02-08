@@ -330,7 +330,7 @@ static void learn(
   while (iter < 0 || iter-- > 0) {
     err = 0.0f;
 
-    for (unsigned int i = 0; i < train_cnt; ++i) {
+    for (unsigned int i = 0; i < train_cnt; i += 50) { // changed from 1 to 50 to reduce the number of iterations
       float tmp_err;
 
       forward_pass(q, l_input, l_c1, l_s1, l_f, train_set[i].data);
@@ -411,7 +411,7 @@ static void test(
 
   int error = 0;
 
-  for (unsigned int i = 0; i < test_cnt; ++i) {
+  for (unsigned int i = 0; i < test_cnt; i += 100) { // changed from 1 to 1000 to reduce the number of iterations
     if (classify(q, l_input, l_c1, l_s1, l_f, test_set[i].data)
         != test_set[i].label) {
       ++error;
@@ -446,13 +446,15 @@ int main(int argc, const  char **argv)
   Layer l_s1 (q, 4*4, 1, 6*6*6);
   Layer l_f (q, 6*6*6, 10, 10);
 
-  // auto t1 = std::chrono::high_resolution_clock::now();
+  auto t1 = std::chrono::high_resolution_clock::now();
   start_time = std::chrono::high_resolution_clock::now();
   learn(q, l_input, l_c1, l_s1, l_f, iter);
   test(q, l_input, l_c1, l_s1, l_f);
-  // auto t2 = std::chrono::high_resolution_clock::now();
-  // double total_time = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+  auto t2 = std::chrono::high_resolution_clock::now();
+  double total_time = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
   // printf("Total time (learn + test) %lf secs \n", total_time / 1.0e6);
+  std::cerr << "Total time (learn + test) " << total_time / 1.0e6 << " secs" << std::endl;
+  std::cerr << "Total events: " << event_list.size() << std::endl;
 
   synergy::Profiler<double> synergy_profiler {q, event_list, start_time};
   std::cout << "kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;

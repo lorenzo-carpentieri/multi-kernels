@@ -2,7 +2,7 @@
 #include "layer.h"
 
 // Constructor
-Layer::Layer (sycl::queue &q, int M, int N, int O)
+Layer::Layer (synergy::queue &q, int M, int N, int O)
 {
   this->M = M;
   this->N = N;
