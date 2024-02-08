@@ -43,7 +43,7 @@ Emerald Edition, pp. 75-92. January 2011.
 #include <stdio.h>
 #include <math.h>
 #include <sys/time.h>
-#include <sycl/sycl.hpp>
+#include <synergy.hpp>
 
 // threads per block
 #define THREADS1 256  // must be a power of 2
@@ -120,8 +120,8 @@ int main(int argc, char* argv[])
 {
   // perform some checks
 
-  printf("ECL-BH v4.5\n");
-  printf("Copyright (c) 2010-2020 Texas State University\n");
+  // printf("ECL-BH v4.5\n");
+  // printf("Copyright (c) 2010-2020 Texas State University\n");
 
   if (argc != 3) {
     fprintf(stderr, "\n");
@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
   epssq = 0.05 * 0.05;
   itolsq = 1.0f / (0.5 * 0.5);
 
-  printf("configuration: %d bodies, %d time steps\n", nbodies, timesteps);
+  // printf("configuration: %d bodies, %d time steps\n", nbodies, timesteps);
 
   // allocate host memory
 
@@ -221,11 +221,8 @@ int main(int argc, char* argv[])
     vel[i] = v;
   }
 
-#ifdef USE_GPU
-  sycl::queue q(sycl::gpu_selector_v, sycl::property::queue::in_order());
-#else
-  sycl::queue q(sycl::cpu_selector_v, sycl::property::queue::in_order());
-#endif
+  synergy::queue q(sycl::gpu_selector_v);
+
 
   // allocate device memory
 
@@ -261,12 +258,16 @@ int main(int argc, char* argv[])
     });
   });
 
+  std::vector<sycl::event> events;
+  std::vector<std::string> kernel_names;
+  auto start_synergy = synergy::wall_clock_t::now();  // auto start_synergy = synergy::wall_clock_t::now;
   for (step = 0; step < timesteps; step++) {
 
     sycl::range<1> k2_gws (blocks * FACTOR1 * THREADS1);
     sycl::range<1> k2_lws (THREADS1);
 
-    q.submit([&](sycl::handler &cgh) {
+    kernel_names.push_back("bounding_box");
+    events.push_back(q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<float, 1> smaxx(sycl::range<1>(THREADS1), cgh);
       sycl::local_accessor<float, 1> smaxy(sycl::range<1>(THREADS1), cgh);
       sycl::local_accessor<float, 1> smaxz(sycl::range<1>(THREADS1), cgh);
@@ -365,11 +366,13 @@ int main(int argc, char* argv[])
           }
         }
       });
-    });
+    }));
 
     sycl::range<1> k3_gws (blocks * 256);
     sycl::range<1> k3_lws (256);
-    q.submit([&](sycl::handler &cgh) {
+   
+    kernel_names.push_back("clear_kernel1");
+    events.push_back(q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class clear_kernel1>(
         sycl::nd_range<1>(k3_gws, k3_lws), [=] (sycl::nd_item<1> item) {
         int top = 8 * nnodes;
@@ -384,11 +387,13 @@ int main(int argc, char* argv[])
           k += inc;
         }
       });
-    });
+    }));
 
     sycl::range<1> k4_gws (blocks * FACTOR2 * THREADS2);
     sycl::range<1> k4_lws (THREADS2);
-    q.submit([&](sycl::handler &cgh) {
+   
+    kernel_names.push_back("tree_building");
+    events.push_back(q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class tree_building>(sycl::nd_range<1>(k4_gws, k4_lws), [=] (sycl::nd_item<1> item) {
         int i, j, depth, skip, inc;
         float x, y, z, r;
@@ -497,11 +502,12 @@ int main(int argc, char* argv[])
           }
         }
       });
-    });
+    }));
 
     sycl::range<1> k5_gws (blocks * 256);
     sycl::range<1> k5_lws (256);
-    q.submit([&](sycl::handler &cgh) {
+    kernel_names.push_back("clear_kernel2");
+    events.push_back(q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class clear_kernel2>(
         sycl::nd_range<1>(k5_gws, k5_lws), [=] (sycl::nd_item<1> item) {
         int bottom = bottomd[0];
@@ -516,11 +522,13 @@ int main(int argc, char* argv[])
           k += inc;
         }
       });
-    });
+    }));
 
     sycl::range<1> k6_gws (blocks * FACTOR3 * THREADS3);
     sycl::range<1> k6_lws (THREADS3);
-    q.submit([&](sycl::handler &cgh) {
+    
+    kernel_names.push_back("sum");
+    events.push_back(q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<int, 1> child(sycl::range<1>(THREADS3*8), cgh);
       sycl::local_accessor<float, 1> mass(sycl::range<1>(THREADS3*8), cgh);
       cgh.parallel_for<class sum>(
@@ -650,11 +658,13 @@ int main(int argc, char* argv[])
           }
         }
       });
-    });
+    }));
 
     sycl::range<1> k7_gws (blocks * FACTOR4 * THREADS4);
     sycl::range<1> k7_lws (THREADS4);
-    q.submit([&](sycl::handler &cgh) {
+  
+    kernel_names.push_back("sort");
+    events.push_back(q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class sort>(
         sycl::nd_range<1>(k7_gws, k7_lws), [=] (sycl::nd_item<1> item) {
         int i, j;
@@ -692,12 +702,13 @@ int main(int argc, char* argv[])
           item.barrier(sycl::access::fence_space::local_space);  // optional barrier for performance
         }
       });
-    });
+    }));
 
     sycl::range<1> k8_gws (blocks * FACTOR5 * THREADS5);
     sycl::range<1> k8_lws (THREADS5);
 
-    q.submit([&](sycl::handler &cgh) {
+    kernel_names.push_back("calc_force");
+    events.push_back(q.submit([&](sycl::handler &cgh) {
       sycl::local_accessor<int, 1> pos(sycl::range<1>(THREADS5), cgh);
       sycl::local_accessor<int, 1> node(sycl::range<1>(THREADS5), cgh);
       sycl::local_accessor<float, 1> dq(sycl::range<1>(THREADS5), cgh);
@@ -803,11 +814,13 @@ int main(int argc, char* argv[])
           accVeld[i] = acc;
         }
       });
-    });
+    }));
 
     sycl::range<1> k9_gws (blocks * FACTOR6 * THREADS6);
     sycl::range<1> k9_lws (THREADS6);
-    q.submit([&](sycl::handler &cgh) {
+    
+    kernel_names.push_back("integration");
+    events.push_back(q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class integration>(
         sycl::nd_range<1>(k9_gws, k9_lws), [=] (sycl::nd_item<1> item) {
         // iterate over all bodies assigned to thread
@@ -837,11 +850,21 @@ int main(int argc, char* argv[])
           accVeld[i] = acc;
         }
       });
-    });
+    }));
   }
   q.wait();
 
+  synergy::Profiler<double> synergy_profiler(q, events, start_synergy);
   gettimeofday(&endtime, NULL);
+  
+  std::cout << "kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
+
+  for(int i = 0; i < events.size(); i++){
+      std::string s = kernel_names[i];
+      std::cout << s << ", ";
+                synergy_profiler.print_all_profiling_info(i);
+  }
+  
   runtime = (endtime.tv_sec + endtime.tv_usec/1000000.0 - 
              starttime.tv_sec - starttime.tv_usec/1000000.0);
 
