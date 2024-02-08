@@ -489,19 +489,12 @@ int main(int argc, char *argv[])
     {
       std::string s = kernel_names[i + (t * 7)];
       std::cout << t << ", "
-                << s << ", "
-                << q.get_synergy_device().get_uncore_frequency() << ", "
-                << q.get_synergy_device().get_core_frequency() << ", "
-                << synergy_profiler.get_kernel_execution_times()[i + (t * 7)] << ", "
-                << synergy_profiler.get_kernel_execution_energies()[i + (t * 7)] << ", "
-                << synergy_profiler.get_real_execution_time() << ", "
-                << synergy_profiler.get_total_kernel_execution_times() << ", "
-                << synergy_profiler.get_device_energy() << ", "
-                << synergy_profiler.get_total_kernel_execution_energies() << std::endl;
+                << s << ", ";
+                synergy_profiler.print_all_profiling_info(i + (t * 7));
+      
       i++;
     }
     t++;
-    // std::cout << "\n";
   }
 
   auto end = std::chrono::steady_clock::now();

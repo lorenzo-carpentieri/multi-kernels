@@ -9,6 +9,7 @@ using time_point_t = std::chrono::time_point<wall_clock_t>;
 template <typename T, class Period>
 using time_interval_t = std::chrono::duration<T, Period>;
 
+// TODO: add method to print a string with all the time and energy information
 template <typename T>
 class Profiler final
 {
@@ -17,9 +18,8 @@ class Profiler final
 
 public:
     Profiler() = default;
-    Profiler(synergy::queue &q, event_list &events, time_point_t start)
+    Profiler(synergy::queue &q, event_list &events, time_point_t start) : q(q)
     {
-
         profile(q, events, start);
     }
 
@@ -111,6 +111,21 @@ public:
         return m_profData.totalDeviceEnergy;
     }
 
+    // pass the index of the kernel to profile
+    inline void print_all_profiling_info(size_t index)
+    {
+        std::cout << q.get_synergy_device().get_uncore_frequency() << ", "
+                  << q.get_synergy_device().get_core_frequency() << ", "
+                  << get_kernel_execution_times()[index] << ", "
+                  << get_kernel_execution_energies()[index] << ", "
+                  << get_real_execution_time() << ", "
+                  << get_total_kernel_execution_times() << ", "
+                  << get_device_energy() << ", "
+                  << get_total_kernel_execution_energies()
+                  << std::endl;
+        return;
+    }
+
 private:
     struct profiling_data
     {
@@ -130,7 +145,7 @@ private:
     };
 
     profiling_data m_profData;
-
+    synergy::queue q;
     inline void set_total_command_group_submission_time()
     {
         m_profData.totalSubmissionTime = std::reduce(m_profData.cgSubmissionTimes.begin(), m_profData.cgSubmissionTimes.end(), 0, std::plus<T>());
