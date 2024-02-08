@@ -61,6 +61,7 @@ set(benchmarks
     aop-sycl/aop_main.cpp
     srad-sycl/srad_main.cpp
     mnist-sycl/mnist_main.cpp
+    metropolis-sycl/metropolis_main.cpp
 )
 
 # Copy file

@@ -24,11 +24,17 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 #include <cmath>
-#include <sycl/sycl.hpp>
+#include <synergy.hpp>
+#include <vector>
+#include <chrono>
 #include "utils.h"
 #include "kernel_prng.h"
 #include "kernel_metropolis.h"
 #include "kernel_reduction.h"
+
+std::vector<sycl::event> event_list;
+std::vector<std::string> kernel_names;
+synergy::time_point_t start_time;
 
 int main(int argc, char **argv) {
 
@@ -94,11 +100,12 @@ int main(int argc, char **argv) {
   gpu_pcg32_srandom_r(&hpcgs, &hpcgi, seed, 1);
   seed = gpu_pcg32_random_r(&hpcgs, &hpcgi);
 
-#ifdef USE_GPU
-  sycl::queue q(sycl::gpu_selector_v, sycl::property::queue::in_order());
-#else
-  sycl::queue q(sycl::cpu_selector_v, sycl::property::queue::in_order());
-#endif
+  synergy::queue q{sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order()}};
+// #ifdef USE_GPU
+//   sycl::queue q(sycl::gpu_selector_v, sycl::property::queue::in_order());
+// #else
+//   sycl::queue q(sycl::cpu_selector_v, sycl::property::queue::in_order());
+// #endif
 
   /* build the space of computation for the lattices */
   sycl::range<3> mc_lws(BZ, BY / 2, BX);
@@ -146,6 +153,7 @@ int main(int argc, char **argv) {
   /* malloc device energy reductions */
   float* dE = sycl::malloc_device<float>(rpool, q);
 
+  start_time = std::chrono::high_resolution_clock::now();
   /* malloc the data for 'r' replicas on each GPU */
   for (int k = 0; k < rpool; ++k) {
     mdlat[k] = sycl::malloc_device<int>(N, q);
@@ -153,7 +161,7 @@ int main(int argc, char **argv) {
     apcgb[k] = sycl::malloc_device<uint64_t>((N / 4), q);
     // offset and sequence approach
 
-    q.submit([&](sycl::handler &cgh) {
+    event_list.push_back(q.submit([&](sycl::handler &cgh) {
       auto apcga_k = apcga[k];
       auto apcgb_k = apcgb[k];
 
@@ -161,7 +169,8 @@ int main(int argc, char **argv) {
         kernel_gpupcg_setup(apcga_k, apcgb_k, N / 4,
         seed + N / 4 * k, k, item);
       });
-    });
+    }));
+    kernel_names.push_back("kernel_gpupcg_setup");
   }
 
   /* host memory setup for each replica */
@@ -179,14 +188,14 @@ int main(int argc, char **argv) {
   }
 
   /* print parameters */
-  printf("\tparameters:{\n");
-  printf("\t\tL:                            %i\n", L);
-  printf("\t\tvolume:                       %i\n", N);
-  printf("\t\t[TR,dT]:                      [%f, %f]\n", TR, dT);
-  printf("\t\t[atrials, ains, apts, ams]:   [%i, %i, %i, %i]\n", atrials, ains, apts, ams);
-  printf("\t\tmag_field h:                  %f\n", h);
-  printf("\t\treplicas:                     %i\n", R);
-  printf("\t\tseed:                         %lu\n", seed);
+  // printf("\tparameters:{\n");
+  // printf("\t\tL:                            %i\n", L);
+  // printf("\t\tvolume:                       %i\n", N);
+  // printf("\t\t[TR,dT]:                      [%f, %f]\n", TR, dT);
+  // printf("\t\t[atrials, ains, apts, ams]:   [%i, %i, %i, %i]\n", atrials, ains, apts, ams);
+  // printf("\t\tmag_field h:                  %f\n", h);
+  // printf("\t\treplicas:                     %i\n", R);
+  // printf("\t\tseed:                         %lu\n", seed);
 
   /* find good temperature distribution */
   FILE *fw = fopen("trials.dat", "w");
@@ -200,16 +209,17 @@ int main(int argc, char **argv) {
   for (int trial = 0; trial < atrials; ++trial) {
 
     /* progress printing */
-    printf("[trial %i of %i]\n", trial+1, atrials); fflush(stdout);
+    // printf("[trial %i of %i]\n", trial+1, atrials); fflush(stdout);
 
     /* distribution for H */
-    q.submit([&](sycl::handler &cgh) {
+    event_list.push_back(q.submit([&](sycl::handler &cgh) {
       auto apcga_ct2 = apcga[0];
       auto apcgb_ct3 = apcgb[0];
       cgh.parallel_for(sycl::nd_range<1>(reset_gws, reset_lws), [=](sycl::nd_item<1> item) {
         kernel_reset_random_gpupcg(dH, N, apcga_ct2, apcgb_ct3, item);
       });
-    });
+    }));
+    kernel_names.push_back("kernel_reset_random_gpupcg");
 
     /* reset ex counters */
     reset_array(aex, rpool, 0.0f);
@@ -221,14 +231,15 @@ int main(int argc, char **argv) {
     seed = gpu_pcg32_random_r(&hpcgs, &hpcgi);
 
     for (int k = 0; k < ar; ++k) {
-      q.submit([&](sycl::handler &cgh) {
+      event_list.push_back(q.submit([&](sycl::handler &cgh) {
         auto mdlat_k = mdlat[k];
         cgh.parallel_for(sycl::nd_range<1>(reset_gws, reset_lws), [=](sycl::nd_item<1> item) {
           kernel_reset<int>(mdlat_k, N, 1, item);
         });
-      });
+      }));
+      kernel_names.push_back("kernel_reset");
 
-      q.submit([&](sycl::handler &cgh) {
+      event_list.push_back(q.submit([&](sycl::handler &cgh) {
         auto apcga_k = apcga[k];
         auto apcgb_k = apcgb[k];
         cgh.parallel_for(sycl::nd_range<1>(prng_gws, prng_lws), [=](sycl::nd_item<1> item) {
@@ -236,7 +247,8 @@ int main(int argc, char **argv) {
                               seed + (uint64_t)(N / 4 * k), k,
                               item);
         });
-      });
+      }));
+      kernel_names.push_back("kernel_gpupcg_setup");
     }
 
     /* parallel tempering */
@@ -247,7 +259,7 @@ int main(int argc, char **argv) {
       /* metropolis simulation */
       for(int i = 0; i < ams; ++i) {
         for(int k = 0; k < ar; ++k) {
-          q.submit([&](sycl::handler &cgh) {
+          event_list.push_back(q.submit([&](sycl::handler &cgh) {
             sycl::local_accessor<site_t, 1> ss_acc(sycl::range<1>(sLx*sLy*sLz), cgh);
 
             auto mdlat_k_ct2 = mdlat[k];
@@ -261,13 +273,14 @@ int main(int argc, char **argv) {
                                 apcgb_k_ct7, 0, item,
                                 ss_acc.get_pointer());
             });
-          });
+          }));
+          kernel_names.push_back("kernel_metropolis");
         }
 
         q.wait();
 
         for(int k = 0; k < ar; ++k) {
-          q.submit([&](sycl::handler &cgh) {
+          event_list.push_back(q.submit([&](sycl::handler &cgh) {
             sycl::local_accessor<site_t, 1> ss_acc(sycl::range<1>(sLx*sLy*sLz), cgh);
 
             auto mdlat_k_ct2 = mdlat[k];
@@ -281,7 +294,8 @@ int main(int argc, char **argv) {
                                 apcgb_k_ct7, 1, item,
                                 ss_acc.get_pointer());
             });
-          });
+          }));
+          kernel_names.push_back("kernel_metropolis");
         }
 
         q.wait();
@@ -292,17 +306,18 @@ int main(int argc, char **argv) {
 
       /* compute energies for exchange */
       // adapt_ptenergies(s, tid);
-      q.submit([&](sycl::handler &cgh) {
+      event_list.push_back(q.submit([&](sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<1>(reset_gws2, reset_lws), [=](sycl::nd_item<1> item) {
           kernel_reset<float>(dE, ar, 0.0f, item);
         });
-      });
+      }));
+      kernel_names.push_back("kernel_reset");
       q.wait();
 
       /* compute one energy reduction for each replica */
       for(int k = 0; k < ar; ++k){
         /* launch reduction kernel for k-th replica */
-        q.submit([&](sycl::handler &cgh) {
+        event_list.push_back(q.submit([&](sycl::handler &cgh) {
           sycl::local_accessor<float, 1> shared_acc(sycl::range<1>(32), cgh);
 
           auto mdlat_k = mdlat[k];
@@ -312,7 +327,8 @@ int main(int argc, char **argv) {
             kernel_redenergy<float>(mdlat_k, L, dE + k, dH, h, item,
                                     shared_acc.get_pointer());
           });
-        });
+        }));
+        kernel_names.push_back("kernel_redenergy");
         q.wait();
       }
       q.memcpy(aexE, dE, ar * sizeof(float)).wait();
@@ -355,7 +371,7 @@ int main(int argc, char **argv) {
         }
         fgoleft(&fnow, ar);
       }
-      printf("\rpt........%i%%", 100 * (p + 1)/apts); fflush(stdout);
+      // printf("\rpt........%i%%", 100 * (p + 1)/apts); fflush(stdout);
     }
 
     double avex = 0;
@@ -377,10 +393,10 @@ int main(int argc, char **argv) {
     fprintf(fw, "%d %f  %f  %f\n", trial, avex, minex, maxex);
     fflush(fw);
 
-    printf(" [<avg> = %.3f <min> = %.3f <max> = %.3f]\n\n", avex, minex, maxex);
-    printarrayfrag(aex, ar, "aex");
-    printarrayfrag(aavex, ar, "aavex");
-    printindexarrayfrag(aexE, arts, ar, "aexE");
+    // printf(" [<avg> = %.3f <min> = %.3f <max> = %.3f]\n\n", avex, minex, maxex);
+    // printarrayfrag(aex, ar, "aex");
+    // printarrayfrag(aavex, ar, "aavex");
+    // printindexarrayfrag(aexE, arts, ar, "aexE");
 
     // update aT, R, ar after insertion
     insert_temps(aavex, aT, &R, &ar, ains);
@@ -394,8 +410,8 @@ int main(int argc, char **argv) {
   } // atrials
 
   double end = rtclock();
-  printf("Total trial time %.2f secs\n", end-start);
-  printf("Total kernel time (metropolis simulation) %.2f secs\n", total_ktime);
+  // printf("Total trial time %.2f secs\n", end-start);
+  // printf("Total kernel time (metropolis simulation) %.2f secs\n", total_ktime);
 
   fclose(fw);
   for(int i = 0; i < rpool; ++i) {
@@ -417,6 +433,13 @@ int main(int argc, char **argv) {
   free(arts);
   free(atrs);
   free(aT);
+
+  synergy::Profiler<double> synergy_profiler {q, event_list, start_time};
+  std::cout << "kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
+  for (int i = 0; i < kernel_names.size(); i++) {
+    std::cout << kernel_names[i] << ",";
+    synergy_profiler.print_all_profiling_info(i);
+  }
 
   return 0;
 }
