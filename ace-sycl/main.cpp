@@ -477,7 +477,7 @@ int main(int argc, char *argv[])
 
   // q.wait();
 
-  Profiler<double> synergy_profiler(q, events, start);
+  synergy::Profiler<double> synergy_profiler(q, events, start);
   t = 0;
   std::cout << "iteration,kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
   while (t <= num_steps)
