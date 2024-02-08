@@ -2,9 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <chrono>
-#include <sycl/sycl.hpp>
 #include <synergy.hpp>
-#include <sycl_profiler.hpp>
 // define the data set size (cubic volume)
 #define DATAXSIZE 600
 #define DATAYSIZE 600
