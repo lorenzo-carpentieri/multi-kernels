@@ -984,7 +984,7 @@ void compute_final_sum_kernel(
 }
 
 template <typename Payoff>
-static inline void do_run(sycl::queue &q,
+static inline void do_run(synergy::queue &q,
                           double *h_samples,
                           int num_timesteps,
                           int num_paths,
@@ -1284,16 +1284,16 @@ int main(int argc, char **argv)
   }
 
   // Print the arguments.
-  printf("==============\n");
-  printf("Num Timesteps         : %d\n", num_timesteps);
-  printf("Num Paths             : %dK\n", num_paths);
-  printf("Num Runs              : %d\n", num_runs);
-  printf("T                     : %lf\n", T);
-  printf("S0                    : %lf\n", S0);
-  printf("K                     : %lf\n", K);
-  printf("r                     : %lf\n", r);
-  printf("sigma                 : %lf\n", sigma);
-  printf("Option Type           : American %s\n", price_put ? "Put" : "Call");
+  // printf("==============\n");
+  // printf("Num Timesteps         : %d\n", num_timesteps);
+  // printf("Num Paths             : %dK\n", num_paths);
+  // printf("Num Runs              : %d\n", num_runs);
+  // printf("T                     : %lf\n", T);
+  // printf("S0                    : %lf\n", S0);
+  // printf("K                     : %lf\n", K);
+  // printf("r                     : %lf\n", r);
+  // printf("sigma                 : %lf\n", sigma);
+  // printf("Option Type           : American %s\n", price_put ? "Put" : "Call");
 
   // We want x1024 paths.
   num_paths *= 1024;
@@ -1336,12 +1336,13 @@ int main(int argc, char **argv)
 
   std::vector<sycl::event> events;
   std::vector<std::string> kernel_names;
-
+  auto start_synergy = synergy::wall_clock_t::now();
   for (int run = 0; run < num_runs; ++run)
   {
     for (int i = 0; i < num_timesteps * num_paths; ++i)
       h_samples[i] = norm_dist(rng);
-
+    // TODO: if we have more then one run we consider also the loop at line 1342 that is not part of the GPU time
+    if(run==0 )start_synergy = synergy::wall_clock_t::now();
     auto start = std::chrono::high_resolution_clock::now();
     if (price_put)
       do_run(q,
@@ -1378,17 +1379,27 @@ int main(int argc, char **argv)
              d_svds,
              d_all_out_of_the_money,
              d_temp_storage,
-             &h_price, events,
+             &h_price,
+             events,
              kernel_names);
 
     auto end = std::chrono::high_resolution_clock::now();
     const float elapsed_time =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
     total_elapsed_time += elapsed_time;
+    
   }
+  
+  synergy::Profiler<double> synergy_profiler(q, events, start_synergy);
+  std::cout << "kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
 
-  printf("==============\n");
-  printf("GPU Longstaff-Schwartz: %.8lf\n", h_price);
+  for(int i = 0; i < events.size(); i++){
+      std::string s = kernel_names[i];
+      std::cout << s << ", ";
+                synergy_profiler.print_all_profiling_info(i);
+  }
+  // printf("==============\n");
+  // printf("GPU Longstaff-Schwartz: %.8lf\n", h_price);
 
   double price = 0.0;
 
@@ -1397,19 +1408,19 @@ int main(int argc, char **argv)
   else
     price = binomial_tree(num_timesteps, PayoffCall(K), dt, S0, r, sigma);
 
-  printf("Binonmial             : %.8lf\n", price);
+  // printf("Binonmial             : %.8lf\n", price);
 
   if (price_put)
     price = black_scholes_merton_put(T, K, S0, r, sigma);
   else
     price = black_scholes_merton_call(T, K, S0, r, sigma);
 
-  printf("European Price        : %.8lf\n", price);
+  // printf("European Price        : %.8lf\n", price);
 
-  printf("==============\n");
+  // printf("==============\n");
 
-  printf("elapsed time for each run         : %.3fms\n", total_elapsed_time / num_runs);
-  printf("==============\n");
+  // printf("elapsed time for each run         : %.3fms\n", total_elapsed_time / num_runs);
+  // printf("==============\n");
 
   // Release memory
   free(h_samples);
