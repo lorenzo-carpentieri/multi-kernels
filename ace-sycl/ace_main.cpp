@@ -473,20 +473,11 @@ int main(int argc, char *argv[])
 
   synergy::Profiler<double> synergy_profiler(q, events, start);
   t = 0;
-  std::cout << "iteration,kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
-  while (t <= num_steps)
-  {
-    int i = 0;
-    while (i < 7)
-    {
-      std::string s = kernel_names[i + (t * 7)];
-      std::cout << t << ", "
-                << s << ", ";
-                synergy_profiler.print_all_profiling_info(i + (t * 7));
-      
-      i++;
-    }
-    t++;
+  std::cout << "kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
+  for(int i = 0; i < events.size(); i++){
+      std::string s = kernel_names[i];
+      std::cout << s << ", ";
+                synergy_profiler.print_all_profiling_info(i);
   }
 
   auto end = std::chrono::steady_clock::now();
