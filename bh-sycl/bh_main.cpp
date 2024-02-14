@@ -868,7 +868,7 @@ int main(int argc, char* argv[])
   runtime = (endtime.tv_sec + endtime.tv_usec/1000000.0 - 
              starttime.tv_sec - starttime.tv_usec/1000000.0);
 
-  printf("Total kernel execution time: %.4lf s\n", runtime);
+  // printf("Total kernel execution time: %.4lf s\n", runtime);
 
   // transfer final results back to a host
   q.memcpy(accVel, accVeld, nbodies * sizeof(sycl::float4));
