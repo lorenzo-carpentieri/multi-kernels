@@ -1,3 +1,5 @@
 # Dev Environment Setup
 .vscode
 build/*
+logs/*
+*.dat
