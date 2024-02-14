@@ -1,0 +1,79 @@
+#!/bin/bash
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --platform=*)
+      arch="${1#*=}"
+      shift
+      ;;
+    --first-iters=*)
+      first_iters="${1#*=}"
+      shift
+      ;;
+    --second-iters=*)
+      second_iters="${1#*=}"
+      shift
+      ;;
+    *)
+    echo "Invalid argument: $1"
+      return 1 2>/dev/null
+      exit 1
+      ;;
+  esac
+done
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+EXEC_DIR=$SCRIPT_DIR/build
+LOG_DIR=$SCRIPT_DIR/logs
+
+mkdir -p $LOG_DIR
+# ACE
+echo "[*] Running ACE"
+num_runs=1
+$EXEC_DIR/ace_main $num_runs > $LOG_DIR/ace.log
+
+# AOP
+echo "[*] Running AOP"
+timesteps=100
+num_paths=32
+num_runs=1
+T=1.0
+K=4.0
+S0=3.60
+r=0.06
+sigma=0.2
+price_put="-call"
+$EXEC_DIR/aop_main -timesteps $timesteps -paths $num_paths -runs $num_runs -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put > $LOG_DIR/aop.log
+
+# BH
+echo "[*] Running BH"
+number_of_bodies=1
+number_of_timesteps=1
+$EXEC_DIR/bh_main $number_of_bodies $number_of_timesteps > $LOG_DIR/bh.log
+
+# Metropolis
+echo "[*] Running Metropolis"
+L=32
+R=1
+atrials=1
+ains=1
+apts=1
+ams=1
+seed=2
+TR=0.1
+dT=0.1
+h=0.1
+$EXEC_DIR/metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed > $LOG_DIR/metropolis.log
+
+# Mnist
+echo "[*] Running MNIST"
+num_iters=1 
+$EXEC_DIR/mnist_main $num_iters > $LOG_DIR/mnist.log
+
+# Srad
+echo "[*] Running SRAD"
+num_iters=1
+lambda=1
+number_of_rows=512
+number_of_cols=512
+$EXEC_DIR/srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad.log
