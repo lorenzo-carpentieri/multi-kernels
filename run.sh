@@ -26,11 +26,13 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 EXEC_DIR=$SCRIPT_DIR/build
 LOG_DIR=$SCRIPT_DIR/logs
 
+cd $EXEC_DIR
+
 mkdir -p $LOG_DIR
 # ACE
 echo "[*] Running ACE"
 num_runs=1
-$EXEC_DIR/ace_main $num_runs > $LOG_DIR/ace.log
+./ace_main $num_runs > $LOG_DIR/ace.csv 2> $LOG_DIR/ace.log
 
 # AOP
 echo "[*] Running AOP"
@@ -43,13 +45,13 @@ S0=3.60
 r=0.06
 sigma=0.2
 price_put="-call"
-$EXEC_DIR/aop_main -timesteps $timesteps -paths $num_paths -runs $num_runs -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put > $LOG_DIR/aop.log
+./aop_main -timesteps $timesteps -paths $num_paths -runs $num_runs -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put > $LOG_DIR/aop.csv 2> $LOG_DIR/aop.log
 
 # BH
 echo "[*] Running BH"
 number_of_bodies=1
 number_of_timesteps=1
-$EXEC_DIR/bh_main $number_of_bodies $number_of_timesteps > $LOG_DIR/bh.log
+./bh_main $number_of_bodies $number_of_timesteps > $LOG_DIR/bh.csv 2> $LOG_DIR/bh.log
 
 # Metropolis
 echo "[*] Running Metropolis"
@@ -63,12 +65,12 @@ seed=2
 TR=0.1
 dT=0.1
 h=0.1
-$EXEC_DIR/metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed > $LOG_DIR/metropolis.log
+./metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed > $LOG_DIR/metropolis.csv 2> $LOG_DIR/metropolis.log
 
 # Mnist
 echo "[*] Running MNIST"
 num_iters=1 
-$EXEC_DIR/mnist_main $num_iters > $LOG_DIR/mnist.log
+./mnist_main $num_iters > $LOG_DIR/mnist.csv 2> $LOG_DIR/mnist.log
 
 # Srad
 echo "[*] Running SRAD"
@@ -76,4 +78,7 @@ num_iters=1
 lambda=1
 number_of_rows=512
 number_of_cols=512
-$EXEC_DIR/srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad.log
+./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad.csv 2> $LOG_DIR/srad.log
+
+# Finalize
+cd $SCRIPT_DIR

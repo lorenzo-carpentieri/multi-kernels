@@ -104,7 +104,7 @@ int main(int argc, char* argv []) {
 
   const char* input_image_path = "./input.pgm";
   if ( !read_graphics( input_image_path, image_ori, image_ori_rows, image_ori_cols, 1) ) {
-    printf("ERROR: failed to read input image at %s\n", input_image_path);
+    fprintf(stderr, "ERROR: failed to read input image at %s\n", input_image_path);
     if (image_ori != NULL) free(image_ori);
     return -1; // exit on file i/o error
   }
@@ -377,33 +377,33 @@ int main(int argc, char* argv []) {
 
   //  DISPLAY TIMING
 
-  // printf("Time spent in different stages of the application:\n");
-  // printf("%15.12f s, %15.12f %% : SETUP VARIABLES\n",
-  //     (float) (time1-time0) / 1000000, (float) (time1-time0) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : READ COMMAND LINE PARAMETERS\n",
-  //     (float) (time2-time1) / 1000000, (float) (time2-time1) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : READ IMAGE FROM FILE\n",
-  //     (float) (time3-time2) / 1000000, (float) (time3-time2) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : RESIZE IMAGE\n",
-  //     (float) (time4-time3) / 1000000, (float) (time4-time3) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : GPU DRIVER INIT, CPU/GPU SETUP, MEMORY ALLOCATION\n",
-  //     (float) (time5-time4) / 1000000, (float) (time5-time4) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : COPY DATA TO CPU->GPU\n",
-  //     (float) (time6-time5) / 1000000, (float) (time6-time5) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : EXTRACT IMAGE\n",
-  //     (float) (time7-time6) / 1000000, (float) (time7-time6) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : COMPUTE (%d iterations)\n",
-  //     (float) (time8-time7) / 1000000, (float) (time8-time7) / (float) (time12-time0) * 100, niter);
-  // printf("%15.12f s, %15.12f %% : COMPRESS IMAGE\n",
-  //     (float) (time9-time8) / 1000000, (float) (time9-time8) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : COPY DATA TO GPU->CPU\n",
-  //     (float) (time10-time9) / 1000000, (float) (time10-time9) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : SAVE IMAGE INTO FILE\n",
-  //     (float) (time11-time10) / 1000000, (float) (time11-time10) / (float) (time12-time0) * 100);
-  // printf("%15.12f s, %15.12f %% : FREE MEMORY\n",
-  //     (float) (time12-time11) / 1000000, (float) (time12-time11) / (float) (time12-time0) * 100);
-  // printf("Total time:\n");
-  // printf("%.12f s\n", (float) (time12-time0) / 1000000);
+  fprintf(stderr, "Time spent in different stages of the application:\n");
+  fprintf(stderr, "%15.12f s, %15.12f %% : SETUP VARIABLES\n",
+      (float) (time1-time0) / 1000000, (float) (time1-time0) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : READ COMMAND LINE PARAMETERS\n",
+      (float) (time2-time1) / 1000000, (float) (time2-time1) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : READ IMAGE FROM FILE\n",
+      (float) (time3-time2) / 1000000, (float) (time3-time2) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : RESIZE IMAGE\n",
+      (float) (time4-time3) / 1000000, (float) (time4-time3) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : GPU DRIVER INIT, CPU/GPU SETUP, MEMORY ALLOCATION\n",
+      (float) (time5-time4) / 1000000, (float) (time5-time4) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : COPY DATA TO CPU->GPU\n",
+      (float) (time6-time5) / 1000000, (float) (time6-time5) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : EXTRACT IMAGE\n",
+      (float) (time7-time6) / 1000000, (float) (time7-time6) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : COMPUTE (%d iterations)\n",
+      (float) (time8-time7) / 1000000, (float) (time8-time7) / (float) (time12-time0) * 100, niter);
+  fprintf(stderr, "%15.12f s, %15.12f %% : COMPRESS IMAGE\n",
+      (float) (time9-time8) / 1000000, (float) (time9-time8) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : COPY DATA TO GPU->CPU\n",
+      (float) (time10-time9) / 1000000, (float) (time10-time9) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : SAVE IMAGE INTO FILE\n",
+      (float) (time11-time10) / 1000000, (float) (time11-time10) / (float) (time12-time0) * 100);
+  fprintf(stderr, "%15.12f s, %15.12f %% : FREE MEMORY\n",
+      (float) (time12-time11) / 1000000, (float) (time12-time11) / (float) (time12-time0) * 100);
+  fprintf(stderr, "Total time:\n");
+  fprintf(stderr, "%.12f s\n", (float) (time12-time0) / 1000000);
 
   synergy::Profiler<double> synergy_profiler {q, event_list, start_times[0]};
   std::cout << "kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;

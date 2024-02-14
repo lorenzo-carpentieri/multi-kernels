@@ -1294,6 +1294,16 @@ int main(int argc, char **argv)
   // printf("r                     : %lf\n", r);
   // printf("sigma                 : %lf\n", sigma);
   // printf("Option Type           : American %s\n", price_put ? "Put" : "Call");
+  std::cerr << "==============" << std::endl;
+  std::cerr << "Num Timesteps         : " << num_timesteps << std::endl;
+  std::cerr << "Num Paths             : " << num_paths << "K" << std::endl;
+  std::cerr << "Num Runs              : " << num_runs << std::endl;
+  std::cerr << "T                     : " << T << std::endl;
+  std::cerr << "S0                    : " << S0 << std::endl;
+  std::cerr << "K                     : " << K << std::endl;
+  std::cerr << "r                     : " << r << std::endl;
+  std::cerr << "sigma                 : " << sigma << std::endl;
+  std::cerr << "Option Type           : American " << (price_put ? "Put" : "Call") << std::endl;
 
   // We want x1024 paths.
   num_paths *= 1024;
@@ -1400,6 +1410,8 @@ int main(int argc, char **argv)
   }
   // printf("==============\n");
   // printf("GPU Longstaff-Schwartz: %.8lf\n", h_price);
+  std::cerr << "==============" << std::endl;
+  std::cerr << "GPU Longstaff-Schwartz: " << h_price << std::endl;
 
   double price = 0.0;
 
@@ -1409,6 +1421,7 @@ int main(int argc, char **argv)
     price = binomial_tree(num_timesteps, PayoffCall(K), dt, S0, r, sigma);
 
   // printf("Binonmial             : %.8lf\n", price);
+  std::cerr << "Binonmial             : " << price << std::endl;
 
   if (price_put)
     price = black_scholes_merton_put(T, K, S0, r, sigma);
@@ -1416,11 +1429,16 @@ int main(int argc, char **argv)
     price = black_scholes_merton_call(T, K, S0, r, sigma);
 
   // printf("European Price        : %.8lf\n", price);
+  std::cerr << "European Price        : " << price << std::endl;
 
   // printf("==============\n");
+  std::cerr << "==============" << std::endl;
 
   // printf("elapsed time for each run         : %.3fms\n", total_elapsed_time / num_runs);
+  std::cerr << "elapsed time for each run         : " << total_elapsed_time / num_runs << "ms" << std::endl;
+  
   // printf("==============\n");
+  std::cerr << "==============" << std::endl;
 
   // Release memory
   free(h_samples);

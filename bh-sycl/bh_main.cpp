@@ -121,7 +121,9 @@ int main(int argc, char* argv[])
   // perform some checks
 
   // printf("ECL-BH v4.5\n");
+  std::cerr << "ECL-BH v4.5\n";
   // printf("Copyright (c) 2010-2020 Texas State University\n");
+  std::cerr << "Copyright (c) 2010-2020 Texas State University" << std::endl;
 
   if (argc != 3) {
     fprintf(stderr, "\n");
@@ -170,6 +172,7 @@ int main(int argc, char* argv[])
   itolsq = 1.0f / (0.5 * 0.5);
 
   // printf("configuration: %d bodies, %d time steps\n", nbodies, timesteps);
+  std::cerr << "configuration: " << nbodies << " bodies, " << timesteps << " time steps" << std::endl;
 
   // allocate host memory
 
@@ -869,6 +872,7 @@ int main(int argc, char* argv[])
              starttime.tv_sec - starttime.tv_usec/1000000.0);
 
   // printf("Total kernel execution time: %.4lf s\n", runtime);
+  std::cerr << "Total kernel execution time: " << runtime << " s" << std::endl;
 
   // transfer final results back to a host
   q.memcpy(accVel, accVeld, nbodies * sizeof(sycl::float4));
@@ -877,14 +881,15 @@ int main(int argc, char* argv[])
 
   q.wait();
 
-#ifdef DEBUG
   // print output for verification
   for (i = 0; i < nbodies; i++) {
-    printf("%d: %.2e %.2e %.2e\n", i, posMass[i].x(), posMass[i].y(), posMass[i].z());
-    printf("%d: %.2e %.2e %.2e %.2e\n", i, accVel[i].x(), accVel[i].y(), accVel[i].z(), accVel[i].w());
-    printf("%d: %.2e %.2e\n", i, vel[i].x(), vel[i].y());
+    // printf("%d: %.2e %.2e %.2e\n", i, posMass[i].x(), posMass[i].y(), posMass[i].z());
+    // printf("%d: %.2e %.2e %.2e %.2e\n", i, accVel[i].x(), accVel[i].y(), accVel[i].z(), accVel[i].w());
+    // printf("%d: %.2e %.2e\n", i, vel[i].x(), vel[i].y());
+    std::cerr << i << ": " << posMass[i].x() << " " << posMass[i].y() << " " << posMass[i].z() << std::endl;
+    std::cerr << i << ": " << accVel[i].x() << " " << accVel[i].y() << " " << accVel[i].z() << " " << accVel[i].w() << std::endl;
+    std::cerr << i << ": " << vel[i].x() << " " << vel[i].y() << std::endl;
   }
-#endif
 
   free(vel);
   free(accVel);

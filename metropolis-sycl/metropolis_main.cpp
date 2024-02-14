@@ -196,6 +196,14 @@ int main(int argc, char **argv) {
   // printf("\t\tmag_field h:                  %f\n", h);
   // printf("\t\treplicas:                     %i\n", R);
   // printf("\t\tseed:                         %lu\n", seed);
+  std::cerr << "\tparameters:{\n";
+  std::cerr << "\t\tL:                            " << L << std::endl;
+  std::cerr << "\t\tvolume:                       " << N << std::endl;
+  std::cerr << "\t\t[TR,dT]:                      [" << TR << ", " << dT << "]" << std::endl;
+  std::cerr << "\t\t[atrials, ains, apts, ams]:   [" << atrials << ", " << ains << ", " << apts << ", " << ams << "]" << std::endl;
+  std::cerr << "\t\tmag_field h:                  " << h << std::endl;
+  std::cerr << "\t\treplicas:                     " << R << std::endl;
+  std::cerr << "\t\tseed:                         " << seed << std::endl;
 
   /* find good temperature distribution */
   FILE *fw = fopen("trials.dat", "w");
@@ -210,6 +218,7 @@ int main(int argc, char **argv) {
 
     /* progress printing */
     // printf("[trial %i of %i]\n", trial+1, atrials); fflush(stdout);
+    std::cerr << "[trial " << trial+1 << " of " << atrials << "]" << std::endl;
 
     /* distribution for H */
     event_list.push_back(q.submit([&](sycl::handler &cgh) {
@@ -372,6 +381,7 @@ int main(int argc, char **argv) {
         fgoleft(&fnow, ar);
       }
       // printf("\rpt........%i%%", 100 * (p + 1)/apts); fflush(stdout);
+      std::cerr << "\rpt........" << 100 * (p + 1)/apts << "%" << std::endl << std::flush;
     }
 
     double avex = 0;
@@ -394,9 +404,10 @@ int main(int argc, char **argv) {
     fflush(fw);
 
     // printf(" [<avg> = %.3f <min> = %.3f <max> = %.3f]\n\n", avex, minex, maxex);
-    // printarrayfrag(aex, ar, "aex");
-    // printarrayfrag(aavex, ar, "aavex");
-    // printindexarrayfrag(aexE, arts, ar, "aexE");
+    std::cerr << " [<avg> = " << avex << " <min> = " << minex << " <max> = " << maxex << "]" << std::endl;
+    printarrayfrag(aex, ar, "aex");
+    printarrayfrag(aavex, ar, "aavex");
+    printindexarrayfrag(aexE, arts, ar, "aexE");
 
     // update aT, R, ar after insertion
     insert_temps(aavex, aT, &R, &ar, ains);
@@ -411,7 +422,9 @@ int main(int argc, char **argv) {
 
   double end = rtclock();
   // printf("Total trial time %.2f secs\n", end-start);
+  std::cerr << "Total trial time " << end-start << " secs" << std::endl;
   // printf("Total kernel time (metropolis simulation) %.2f secs\n", total_ktime);
+  std::cerr << "Total kernel time (metropolis simulation) " << total_ktime << " secs" << std::endl;
 
   fclose(fw);
   for(int i = 0; i < rpool; ++i) {

@@ -506,15 +506,15 @@ int main(int argc, char *argv[])
         if (fabs(phi_ref[idx][idy][idz] - phi_host[idx][idy][idz]) > 1e-3)
         {
           ok = false;
-          printf("phi: %lf %lf\n", phi_ref[idx][idy][idz], phi_host[idx][idy][idz]);
+          fprintf(stderr, "phi: %lf %lf\n", phi_ref[idx][idy][idz], phi_host[idx][idy][idz]);
         }
         if (fabs(u_ref[idx][idy][idz] - u_host[idx][idy][idz]) > 1e-3)
         {
           ok = false;
-          printf("u: %lf %lf\n", u_ref[idx][idy][idz], u_host[idx][idy][idz]);
+          fprintf(stderr, "u: %lf %lf\n", u_ref[idx][idy][idz], u_host[idx][idy][idz]);
         }
       }
-  printf("%s\n", ok ? "PASS" : "FAIL");
+  fprintf(stderr, "%s\n", ok ? "PASS" : "FAIL");
   free(phi_ref);
   free(u_ref);
 #endif

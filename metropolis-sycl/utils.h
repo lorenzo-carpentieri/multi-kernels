@@ -123,38 +123,38 @@ void rebuild_indices(findex_t* arts, findex_t *atrs, int ar) {
 
 
 void printarray(float *a, int n, const char *name){
-  std::cout << name << "\t = [";
+  std::cerr << name << "\t = [";
   for(int i = 0; i < n; ++i){
-    std::cout << a[i] << ", ";
+    std::cerr << a[i] << ", ";
   }
-  printf("]\n");
+  std::cerr << "]\n";
 }
 
 /* print indexed fragmented array */
 void printindexarray(float *a, int *ind, int n, const char *name){
-  std::cout << name << "\t = [";
+  std::cerr << name << "\t = [";
   for(int i = 0; i < n; ++i){
-    std::cout << a[ind[i]] << ", ";
+    std::cerr << a[ind[i]] << ", ";
   }
-  std::cout << "]\n";
+  std::cerr << "]\n";
 }
 
 /* print indexed fragmented array */
 void printindexarrayfrag(float *a, findex* ind, int m, const char *name){
-  std::cout << name << "\t = [";
+  std::cerr << name << "\t = [";
   for(int j = 0; j < m; ++j){
-    std::cout << a[ind[j].i] << ", ";
+    std::cerr << a[ind[j].i] << ", ";
   }
-  std::cout << "    ";
-  std::cout << "]\n";
+  std::cerr << "    ";
+  std::cerr << "]\n";
 }
 
 void printarrayfrag(float *a, int m, const char *name){
-  std::cout << name << "\t = [";
+  std::cerr << name << "\t = [";
   for(int j = 0; j < m; ++j) {
-    std::cout << a[j] << ", ";
+    std::cerr << a[j] << ", ";
   }
-  printf("]\n");
+  std::cerr << "]" << std::endl;
 }
 
 void reset_array(float *a, int n, float val){
@@ -169,7 +169,8 @@ double rtclock()
   struct timeval Tp;
   int stat;
   stat = gettimeofday (&Tp, &Tzp);
-  if (stat != 0) printf("Error return from gettimeofday: %d",stat);
+  if (stat != 0) 
+    std::cerr << "Error return from gettimeofday: " << stat << std::endl;
   return(Tp.tv_sec + Tp.tv_usec*1.0e-6);
 }
 
