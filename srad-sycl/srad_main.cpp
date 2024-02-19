@@ -249,7 +249,7 @@ int main(int argc, char* argv []) {
     no = Ne;  // original number of sum elements
     mul = 1;  // original multiplier
 
-    while(blocks_work_size2 != 0){
+    // while(blocks_work_size2 != 0){
 
       sycl::range<1> gws2 (global_work_size2);
 
@@ -258,7 +258,23 @@ int main(int argc, char* argv []) {
         sycl::local_accessor<FP, 1> d_psum2 (lws, cgh);
         cgh.parallel_for<class reduce>(
           sycl::nd_range<1>(gws2, lws), [=] (sycl::nd_item<1> item) {
-          #include "kernel_reduce.sycl"
+            const int lid = item.get_local_id(0);
+            const auto gid = item.get_global_id();
+
+            FP partial_sum1 = sycl::reduce_over_group(item.get_group(), d_sums[gid], sycl::plus<FP>());
+            FP partial_sum2 = sycl::reduce_over_group(item.get_group(), d_sums2[gid], sycl::plus<FP>());
+
+            sycl::atomic_ref<FP, sycl::memory_order::relaxed, sycl::memory_scope::device, sycl::access::address_space::global_space> atm(
+                d_sums[0]);
+            if(lid == 0) {
+              atm.fetch_add(partial_sum1);
+            }
+            sycl::atomic_ref<FP, sycl::memory_order::relaxed, sycl::memory_scope::device, sycl::access::address_space::global_space> atm2(
+                d_sums2[0]);
+            if(lid == 0) {
+              atm2.fetch_add(partial_sum2);
+            }
+          // #include "kernel_reduce.sycl"
         });
       });
       event_list.push_back(e);
@@ -266,21 +282,21 @@ int main(int argc, char* argv []) {
       start_times.push_back(std::chrono::high_resolution_clock::now());
       e.wait();
 
-      // update execution parameters
-      no = blocks_work_size2;
-      if(blocks_work_size2 == 1){
-          blocks_work_size2 = 0;
-      }
-      else{
-        mul = mul * NUMBER_THREADS; // update the increment
-        blocks_x = blocks_work_size2/(int)local_work_size; // number of blocks
-        if (blocks_work_size2 % (int)local_work_size != 0){ // compensate for division remainder above by adding one grid
-            blocks_x = blocks_x + 1;
-        }
-        blocks_work_size2 = blocks_x;
-        global_work_size2 = blocks_work_size2 * (int)local_work_size;
-      }
-    } // while
+      // // update execution parameters
+      // no = blocks_work_size2;
+      // if(blocks_work_size2 == 1){
+      //     blocks_work_size2 = 0;
+      // }
+      // else{
+      //   mul = mul * NUMBER_THREADS; // update the increment
+      //   blocks_x = blocks_work_size2/(int)local_work_size; // number of blocks
+      //   if (blocks_work_size2 % (int)local_work_size != 0){ // compensate for division remainder above by adding one grid
+      //       blocks_x = blocks_x + 1;
+      //   }
+      //   blocks_work_size2 = blocks_x;
+      //   global_work_size2 = blocks_work_size2 * (int)local_work_size;
+      // }
+    // } // while
 
     q.memcpy(&total, d_sums, sizeof(FP));
     q.memcpy(&total2, d_sums2, sizeof(FP));
