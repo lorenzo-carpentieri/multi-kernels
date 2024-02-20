@@ -53,6 +53,8 @@ Emerald Edition, pp. 75-92. January 2011.
 #define THREADS5 256
 #define THREADS6 256
 
+#define NUM_ITERS 1
+
 // block count = factor * #SMs
 #define FACTOR1 2
 #define FACTOR2 2
@@ -149,7 +151,7 @@ int main(int argc, char* argv[])
   }
 
   int i;
-  int nnodes, step;
+  unsigned int nnodes, step;
   double runtime;
   float dtime, dthf, epssq, itolsq;
 
@@ -159,11 +161,13 @@ int main(int argc, char* argv[])
   double rsc, vsc, r, v, x, y, z, sq, scale;
 
   // the number of thread blocks may be adjusted for higher performance
-  const int blocks = 24;
+  const int blocks = 12;
 
   nnodes = nbodies * 2;
   if (nnodes < 1024*blocks) nnodes = 1024*blocks;
-  while ((nnodes & (WARPSIZE-1)) != 0) nnodes++;
+  while ((nnodes & (WARPSIZE-1)) != 0) {
+    nnodes++;
+  }
   nnodes--;
 
   dtime = 0.025f; 
@@ -224,7 +228,7 @@ int main(int argc, char* argv[])
     vel[i] = v;
   }
 
-  synergy::queue q(sycl::gpu_selector_v);
+  synergy::queue q(sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order{}});
 
 
   // allocate device memory
@@ -249,7 +253,6 @@ int main(int argc, char* argv[])
   q.memcpy(posMassd, posMass, nbodies * sizeof(sycl::float4));
 
   q.wait();
-
   struct timeval starttime, endtime;
   gettimeofday(&starttime, NULL);
 
@@ -265,7 +268,6 @@ int main(int argc, char* argv[])
   std::vector<std::string> kernel_names;
   auto start_synergy = synergy::wall_clock_t::now();  // auto start_synergy = synergy::wall_clock_t::now;
   for (step = 0; step < timesteps; step++) {
-
     sycl::range<1> k2_gws (blocks * FACTOR1 * THREADS1);
     sycl::range<1> k2_lws (THREADS1);
 
@@ -277,8 +279,7 @@ int main(int argc, char* argv[])
       sycl::local_accessor<float, 1> sminx(sycl::range<1>(THREADS1), cgh);
       sycl::local_accessor<float, 1> sminy(sycl::range<1>(THREADS1), cgh);
       sycl::local_accessor<float, 1> sminz(sycl::range<1>(THREADS1), cgh);
-      cgh.parallel_for<class bounding_box>(
-        sycl::nd_range<1>(k2_gws, k2_lws), [=] (sycl::nd_item<1> item) {
+      cgh.parallel_for<class bounding_box>(sycl::nd_range<1>(k2_gws, k2_lws), [=] (sycl::nd_item<1> item) {
         int i, j, k;
         float val;
         sycl::float3 min, max;
@@ -291,6 +292,7 @@ int main(int argc, char* argv[])
         // scan all bodies
         i = item.get_local_id(0);
         int inc = THREADS1 * item.get_group_range(0);
+        for (int _ = 0; _ < NUM_ITERS; _++){
         for (j = item.get_global_id(0); j < nbodies; j += inc) {
           const sycl::float4 p = posMassd[j];
           val = p.x();
@@ -368,16 +370,18 @@ int main(int argc, char* argv[])
             stepd[0]++;
           }
         }
+        }
       });
     }));
+    q.wait();
 
     sycl::range<1> k3_gws (blocks * 256);
     sycl::range<1> k3_lws (256);
-   
+    
     kernel_names.push_back("clear_kernel1");
     events.push_back(q.submit([&](sycl::handler &cgh) {
-      cgh.parallel_for<class clear_kernel1>(
-        sycl::nd_range<1>(k3_gws, k3_lws), [=] (sycl::nd_item<1> item) {
+      cgh.parallel_for<class clear_kernel1>(sycl::nd_range<1>(k3_gws, k3_lws), [=] (sycl::nd_item<1> item) {
+        for (int _ = 0; _ < NUM_ITERS; _++){
         int top = 8 * nnodes;
         int bottom = 8 * nbodies;
         int inc = item.get_local_range(0) * item.get_group_range(0);
@@ -389,8 +393,10 @@ int main(int argc, char* argv[])
           childd[k] = -1;
           k += inc;
         }
+        }
       });
     }));
+    q.wait();
 
     sycl::range<1> k4_gws (blocks * FACTOR2 * THREADS2);
     sycl::range<1> k4_lws (THREADS2);
@@ -398,6 +404,7 @@ int main(int argc, char* argv[])
     kernel_names.push_back("tree_building");
     events.push_back(q.submit([&](sycl::handler &cgh) {
       cgh.parallel_for<class tree_building>(sycl::nd_range<1>(k4_gws, k4_lws), [=] (sycl::nd_item<1> item) {
+        for (int _ = 0; _ < NUM_ITERS; _++) {
         int i, j, depth, skip, inc;
         float x, y, z, r;
         float dx, dy, dz;
@@ -499,13 +506,14 @@ int main(int argc, char* argv[])
             }
           }
           item.barrier(sycl::access::fence_space::local_space);  // optional barrier for performance
-
           if (skip == 2) {
             childd[locked] = patch;
           }
         }
+        }
       });
     }));
+    q.wait();
 
     sycl::range<1> k5_gws (blocks * 256);
     sycl::range<1> k5_lws (256);
@@ -526,6 +534,7 @@ int main(int argc, char* argv[])
         }
       });
     }));
+    q.wait();
 
     sycl::range<1> k6_gws (blocks * FACTOR3 * THREADS3);
     sycl::range<1> k6_lws (THREADS3);
@@ -662,6 +671,7 @@ int main(int argc, char* argv[])
         }
       });
     }));
+    q.wait();
 
     sycl::range<1> k7_gws (blocks * FACTOR4 * THREADS4);
     sycl::range<1> k7_lws (THREADS4);
@@ -706,6 +716,7 @@ int main(int argc, char* argv[])
         }
       });
     }));
+    q.wait();
 
     sycl::range<1> k8_gws (blocks * FACTOR5 * THREADS5);
     sycl::range<1> k8_lws (THREADS5);
@@ -818,6 +829,7 @@ int main(int argc, char* argv[])
         }
       });
     }));
+    q.wait();
 
     sycl::range<1> k9_gws (blocks * FACTOR6 * THREADS6);
     sycl::range<1> k9_lws (THREADS6);
@@ -855,8 +867,9 @@ int main(int argc, char* argv[])
       });
     }));
   }
+  std::cerr << "Waiting device..." << std::endl;
   q.wait();
-
+  
   synergy::Profiler<double> synergy_profiler(q, events, start_synergy);
   gettimeofday(&endtime, NULL);
   
