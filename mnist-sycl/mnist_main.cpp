@@ -331,10 +331,13 @@ static void learn(
     err = 0.0f;
 
     for (unsigned int i = 0; i < train_cnt; i += 50) { // changed from 1 to 50 to reduce the number of iterations
-      float tmp_err;
+      float tmp_err;  
 
+      double start_forward_pass_energy = q.get_synergy_device().get_energy_usage();
       forward_pass(q, l_input, l_c1, l_s1, l_f, train_set[i].data);
-
+     
+      double end_forward_pass_energy = q.get_synergy_device().get_energy_usage();
+      std::cerr<<"forward_pass_learn_energy: " << (end_forward_pass_energy -start_forward_pass_energy) / 1e6 << std::endl;
       l_f.bp_clear();
       l_s1.bp_clear();
       l_c1.bp_clear();
@@ -352,11 +355,14 @@ static void learn(
         });
       }));
       kernel_names.push_back("err");
+      double start_back_pass_energy = q.get_synergy_device().get_energy_usage();
 
       snrm2(q, 10, l_f.d_preact, tmp_err);
       err += tmp_err;
 
       back_pass(q, l_input, l_c1, l_s1, l_f);
+      double end_back_pass_energy = q.get_synergy_device().get_energy_usage();
+      std::cerr<<"back_pass_learn_energy: " << (end_back_pass_energy -start_back_pass_energy) / 1e6 << std::endl;
     }
 
     err /= train_cnt;
@@ -382,9 +388,11 @@ static unsigned int classify(
   double data[28][28])
 {
   float res[10];
+  double start_forward_pass_energy = q.get_synergy_device().get_energy_usage();
 
   forward_pass(q, l_input, l_c1, l_s1, l_f, data);
-
+  double end_forward_pass_energy = q.get_synergy_device().get_energy_usage();
+  std::cerr<<"forward_pass_classify_energy: " << (end_forward_pass_energy -start_forward_pass_energy) / 1e6 << std::endl;
   unsigned int max = 0;
 
   q.memcpy(res, l_f.output, sizeof(float) * 10).wait();
