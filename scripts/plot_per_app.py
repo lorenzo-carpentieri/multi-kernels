@@ -18,7 +18,7 @@ def plot_data(df: pd.DataFrame):
     x = np.arange(len(df))
     x_labels = [str(d) for d in df.index]
 
-    plt.bar(x, df['total_time'], width=bar_width) 
+    plt.bar(x, df['kernels_time'], width=bar_width) 
     plt.ylabel("Time [ms]")
     plt.xticks(x, labels=x_labels)
 

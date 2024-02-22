@@ -10,19 +10,34 @@ sns.set_theme()
 
 bar_width = 0.3
 padding = 15
-plt.yscale('log')
 
-
-
-def plot_data(df_app: pd.DataFrame, df_phase: pd.DataFrame, df_kernel: pd.DataFrame):
+def plot_energy(df_app: pd.DataFrame, df_phase: pd.DataFrame, df_kernel: pd.DataFrame):
     x = np.arange(len(df_app) * (3 * bar_width))
     x_labels = [str(d) for d in df_app.index]
 
-    plt.bar(x - bar_width, df_app['total_time'], width=bar_width)
-    plt.bar(x, df_phase['total_time'], width=bar_width) 
-    plt.bar(x + bar_width, df_kernel['total_time'], width=bar_width)
+    norm = df_app['total_energy']
 
+    plt.bar(x - bar_width, norm / df_app['total_energy'], width=bar_width)
+    plt.bar(x, norm / df_phase['total_energy'], width=bar_width) 
+    plt.bar(x + bar_width, norm / df_kernel['total_energy'], width=bar_width)
+
+    # plt.ylim(0.5, 2)
     plt.xticks(x, labels=x_labels)
+    plt.ylabel("Normalized")
+
+def plot_time(df_app: pd.DataFrame, df_phase: pd.DataFrame, df_kernel: pd.DataFrame):
+    x = np.arange(len(df_app) * (3 * bar_width))
+    x_labels = [str(d) for d in df_app.index]
+
+    norm = df_app['total_time']
+
+    plt.bar(x - bar_width, norm / df_app['total_time'], width=bar_width)
+    plt.bar(x, norm / df_phase['total_time'], width=bar_width) 
+    plt.bar(x + bar_width, norm / df_kernel['total_time'], width=bar_width)
+
+    # plt.ylim(0.5, 2)
+    plt.xticks(x, labels=x_labels)
+    plt.ylabel("Speedup")
     
 
 
@@ -59,6 +74,9 @@ if __name__ == '__main__':
         df_phase.loc[name] = get_values(df_phase_tmp)
         df_kernel.loc[name] = get_values(df_kernel_tmp)
 
-    plot_data(df_app, df_phase, df_kernel)
+    plot_time(df_app, df_phase, df_kernel)
+    plt.savefig(os.path.join(out_dir, f"time.pdf"))
+    plt.clf()
+    plot_energy(df_app, df_phase, df_kernel)
     plt.savefig(os.path.join(out_dir, f"energy.pdf"))
     # plt.clf()
