@@ -6,6 +6,9 @@
 #include "./graphics.hpp"
 #include "./resize.hpp"
 #include "./timer.hpp"
+#include "../utils/map_reader.hpp"
+
+FreqManager freqMan {std::cin};
 
 int main(int argc, char* argv []) {
   using time_point_t = std::chrono::high_resolution_clock::time_point;
@@ -219,7 +222,7 @@ int main(int argc, char* argv []) {
   sycl::range<1> gws (global_work_size);
   sycl::range<1> lws (local_work_size);
 
-  e = q.submit([&](sycl::handler& cgh) {
+  e = q.submit(0, freqMan.getAndSetFreq("extract"), [&](sycl::handler& cgh) {
     cgh.parallel_for<class extract>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       #include "kernel_extract.sycl"
@@ -234,7 +237,7 @@ int main(int argc, char* argv []) {
 
   for (iter=0; iter<niter; iter++){ // do for the number of iterations input parameter
     // Prepare kernel
-    e = q.submit([&](sycl::handler& cgh) {
+    e = q.submit(0, freqMan.getAndSetFreq("prepare"), [&](sycl::handler& cgh) {
       cgh.parallel_for<class prepare>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         #include "kernel_prepare.sycl"
@@ -253,7 +256,7 @@ int main(int argc, char* argv []) {
 
       sycl::range<1> gws2 (global_work_size2);
 
-      e = q.submit([&](sycl::handler& cgh) {
+      e = q.submit(0, freqMan.getAndSetFreq("reduce"), [&](sycl::handler& cgh) {
         sycl::local_accessor<FP, 1> d_psum (lws, cgh);
         sycl::local_accessor<FP, 1> d_psum2 (lws, cgh);
         cgh.parallel_for<class reduce>(
@@ -311,7 +314,7 @@ int main(int argc, char* argv []) {
     q0sqr = varROI / meanROI2; // gets standard deviation of ROI
 
     // set arguments that were uptaded in this loop
-    e = q.submit([&](sycl::handler& cgh) {
+    e = q.submit(0, freqMan.getAndSetFreq("srad"), [&](sycl::handler& cgh) {
       cgh.parallel_for<class srad>(
         sycl::nd_range<1>(gws, lws) , [=] (sycl::nd_item<1> item) {
         #include "kernel_srad.sycl"
@@ -321,7 +324,7 @@ int main(int argc, char* argv []) {
     kernel_names.push_back("srad");
     start_times.push_back(std::chrono::high_resolution_clock::now());
 
-    e = q.submit([&](sycl::handler& cgh) {
+    e = q.submit(0, freqMan.getAndSetFreq("srad2"), [&](sycl::handler& cgh) {
       cgh.parallel_for<class srad2>(
         sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
         #include "kernel_srad2.sycl"
@@ -338,7 +341,7 @@ int main(int argc, char* argv []) {
 
   //   Compress Kernel - SCALE IMAGE UP FROM 0-1 TO 0-255 AND COMPRESS
 
-  e = q.submit([&](sycl::handler& cgh) {
+  e = q.submit(0, freqMan.getAndSetFreq("compress"), [&](sycl::handler& cgh) {
     cgh.parallel_for<class compress>(
       sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
       #include "kernel_compress.sycl"
