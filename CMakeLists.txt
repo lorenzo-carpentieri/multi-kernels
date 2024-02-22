@@ -107,6 +107,10 @@ foreach(benchmark IN LISTS benchmarks)
         target_link_libraries(${target} PUBLIC synergy)
     endif()
 
+    if(FREQ_SCALING)
+        target_compile_definitions(${target} PUBLIC FREQ_SCALING)
+    endif()
+
     if(ENABLED_TIME_EVENT_PROFILING)
         target_compile_definitions(${target} PUBLIC SYCL_BENCH_ENABLE_QUEUE_PROFILING=1)
     endif()
