@@ -31,10 +31,13 @@
 #include "kernel_prng.h"
 #include "kernel_metropolis.h"
 #include "kernel_reduction.h"
+#include "../utils/map_reader.hpp" 
 
 std::vector<sycl::event> event_list;
 std::vector<std::string> kernel_names;
 synergy::time_point_t start_time;
+
+FreqManager freqMan {std::cin};
 
 int main(int argc, char **argv) {
 
@@ -161,7 +164,7 @@ int main(int argc, char **argv) {
     apcgb[k] = sycl::malloc_device<uint64_t>((N / 4), q);
     // offset and sequence approach
 
-    event_list.push_back(q.submit([&](sycl::handler &cgh) {
+    event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_gpupcg_setup"), [&](sycl::handler &cgh) {
       auto apcga_k = apcga[k];
       auto apcgb_k = apcgb[k];
 
@@ -220,8 +223,11 @@ int main(int argc, char **argv) {
     // printf("[trial %i of %i]\n", trial+1, atrials); fflush(stdout);
     std::cerr << "[trial " << trial+1 << " of " << atrials << "]" << std::endl;
 
+#ifdef FREQ_SCALING
+    q.get_synergy_device().set_core_frequency(1260);
+#endif
     /* distribution for H */
-    event_list.push_back(q.submit([&](sycl::handler &cgh) {
+    event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_reset_random_gpupcg"), [&](sycl::handler &cgh) {
       auto apcga_ct2 = apcga[0];
       auto apcgb_ct3 = apcgb[0];
       cgh.parallel_for(sycl::nd_range<1>(reset_gws, reset_lws), [=](sycl::nd_item<1> item) {
@@ -240,7 +246,7 @@ int main(int argc, char **argv) {
     seed = gpu_pcg32_random_r(&hpcgs, &hpcgi);
 
     for (int k = 0; k < ar; ++k) {
-      event_list.push_back(q.submit([&](sycl::handler &cgh) {
+      event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_reset"), [&](sycl::handler &cgh) {
         auto mdlat_k = mdlat[k];
         cgh.parallel_for(sycl::nd_range<1>(reset_gws, reset_lws), [=](sycl::nd_item<1> item) {
           kernel_reset<int>(mdlat_k, N, 1, item);
@@ -248,7 +254,7 @@ int main(int argc, char **argv) {
       }));
       kernel_names.push_back("kernel_reset");
 
-      event_list.push_back(q.submit([&](sycl::handler &cgh) {
+      event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_gpupcg_setup"), [&](sycl::handler &cgh) {
         auto apcga_k = apcga[k];
         auto apcgb_k = apcgb[k];
         cgh.parallel_for(sycl::nd_range<1>(prng_gws, prng_lws), [=](sycl::nd_item<1> item) {
@@ -260,6 +266,9 @@ int main(int argc, char **argv) {
       kernel_names.push_back("kernel_gpupcg_setup");
     }
 
+#ifdef FREQ_SCALING
+    q.get_synergy_device().set_core_frequency(157);
+#endif
     /* parallel tempering */
     for(int p = 0; p < apts; ++p) {
 
@@ -268,7 +277,7 @@ int main(int argc, char **argv) {
       /* metropolis simulation */
       for(int i = 0; i < ams; ++i) {
         for(int k = 0; k < ar; ++k) {
-          event_list.push_back(q.submit([&](sycl::handler &cgh) {
+          event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_metropolis"), [&](sycl::handler &cgh) {
             sycl::local_accessor<site_t, 1> ss_acc(sycl::range<1>(sLx*sLy*sLz), cgh);
 
             auto mdlat_k_ct2 = mdlat[k];
@@ -289,7 +298,7 @@ int main(int argc, char **argv) {
         q.wait();
 
         for(int k = 0; k < ar; ++k) {
-          event_list.push_back(q.submit([&](sycl::handler &cgh) {
+          event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_metropolis"), [&](sycl::handler &cgh) {
             sycl::local_accessor<site_t, 1> ss_acc(sycl::range<1>(sLx*sLy*sLz), cgh);
 
             auto mdlat_k_ct2 = mdlat[k];
@@ -315,7 +324,7 @@ int main(int argc, char **argv) {
 
       /* compute energies for exchange */
       // adapt_ptenergies(s, tid);
-      event_list.push_back(q.submit([&](sycl::handler &cgh) {
+      event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_reset"), [&](sycl::handler &cgh) {
         cgh.parallel_for(sycl::nd_range<1>(reset_gws2, reset_lws), [=](sycl::nd_item<1> item) {
           kernel_reset<float>(dE, ar, 0.0f, item);
         });
@@ -326,7 +335,7 @@ int main(int argc, char **argv) {
       /* compute one energy reduction for each replica */
       for(int k = 0; k < ar; ++k){
         /* launch reduction kernel for k-th replica */
-        event_list.push_back(q.submit([&](sycl::handler &cgh) {
+        event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_redenergy"), [&](sycl::handler &cgh) {
           sycl::local_accessor<float, 1> shared_acc(sycl::range<1>(32), cgh);
 
           auto mdlat_k = mdlat[k];

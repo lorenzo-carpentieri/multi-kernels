@@ -30,7 +30,8 @@ done
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 EXEC_DIR=$SCRIPT_DIR/build
-LOG_DIR=$SCRIPT_DIR/logs
+LOG_DIR=$SCRIPT_DIR/logs/profiling
+mkdir -p $SCRIPT_DIR/logs
 
 cd $EXEC_DIR
 
@@ -94,13 +95,6 @@ for core_freq in "${sampled_freq[@]}"; do
       -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put > $LOG_DIR/aop/aop_${mem_freq}_${core_freq}.csv 2> $LOG_DIR/aop/aop_${mem_freq}_${core_freq}.log
   fi
 
-  # # BH TODO: Fix energy consumption
-  # if [[ $curr_benches == *"bh"* ]]; then
-  #   echo "[*] Running BH"
-  #   number_of_bodies=1
-  #   number_of_timesteps=1
-  #   ./bh_main $number_of_bodies $number_of_timesteps > $LOG_DIR/bh.csv 2> $LOG_DIR/bh.log
-  # fi
   mkdir -p $LOG_DIR/metropolis/
   # Metropolis
   if [[ $curr_benches == *"metropolis"* ]]; then

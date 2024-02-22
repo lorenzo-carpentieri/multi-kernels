@@ -3,6 +3,8 @@
 #include <math.h>
 #include <chrono>
 #include <synergy.hpp>
+#include <map>
+#include "../utils/map_reader.hpp"
 // define the data set size (cubic volume)
 #define DATAXSIZE 600
 #define DATAYSIZE 600
@@ -323,6 +325,7 @@ void initializationU(double u[][DATAYSIZE][DATAXSIZE], double r0, double delta)
 
 int main(int argc, char *argv[])
 {
+  FreqManager freqMan = FreqManager(std::cin);
   const int num_steps = atoi(argv[1]); // 6000;
   const double dx = 0.4;
   const double dy = 0.4;
@@ -392,12 +395,13 @@ int main(int argc, char *argv[])
   std::vector<sycl::event> events;
   std::vector<synergy::time_point_t> start_times;
   std::vector<std::string> kernel_names;
-
-  while (t <= num_steps)
+  
+  while (t < num_steps)
   {
+    auto freq = freqMan.getAndSetFreq("calculateForce");
     kernel_names.push_back("calculateForce");
     start_times.push_back(synergy::wall_clock_t::now());
-    events.push_back(q.submit([&](sycl::handler &cgh)
+    events.push_back(q.submit(0, freq, [&](sycl::handler &cgh)
                               { cgh.parallel_for<class calc_force>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
                                     { calculateForce(d_phiold,
@@ -407,8 +411,9 @@ int main(int argc, char *argv[])
                                                      dx, dy, dz, epsilon, W0, tau0,
                                                      item); }); }));
 
+    freq = freqMan.getAndSetFreq("allenCahn");
     kernel_names.push_back("allenCahn");
-    sycl::event e2 = q.submit([&](sycl::handler &cgh)
+    sycl::event e2 = q.submit(0, freq, [&](sycl::handler &cgh)
                               { cgh.parallel_for<class allen_cahn>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
                                     { allenCahn(d_phinew,
@@ -422,15 +427,17 @@ int main(int argc, char *argv[])
                                                 item); }); });
     events.push_back(e2);
 
+    freq = freqMan.getAndSetFreq("boundaryConditionsPhi");
     kernel_names.push_back("boundaryConditionsPhi");
-    sycl::event e3 = q.submit([&](sycl::handler &cgh)
+    sycl::event e3 = q.submit(0, freq, [&](sycl::handler &cgh)
                               { cgh.parallel_for<class bc_phi>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
                                     { boundaryConditionsPhi(d_phinew, item); }); });
     events.push_back(e3);
 
     kernel_names.push_back("thermalEquation");
-    sycl::event e4 = q.submit([&](sycl::handler &cgh)
+    freq = freqMan.getAndSetFreq("thermalEquation");
+    sycl::event e4 = q.submit(0, freq, [&](sycl::handler &cgh)
                               { cgh.parallel_for<class thermal_equation>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
                                     { thermalEquation(d_unew,
@@ -441,23 +448,26 @@ int main(int argc, char *argv[])
                                                       item); }); });
     events.push_back(e4);
 
+    freq = freqMan.getAndSetFreq("boundaryConditionsU");
     kernel_names.push_back("boundaryConditionsU");
-    sycl::event e5 = q.submit([&](sycl::handler &cgh)
+    sycl::event e5 = q.submit(0, freq, [&](sycl::handler &cgh)
                               { cgh.parallel_for<class bc_u>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
                                     { boundaryConditionsU(d_unew, delta, item); }); });
 
     events.push_back(e5);
 
+    freq = freqMan.getAndSetFreq("swapGrid_1");
     kernel_names.push_back("swapGrid_1");
-    sycl::event e6 = q.submit([&](sycl::handler &cgh)
+    sycl::event e6 = q.submit(0, freq, [&](sycl::handler &cgh)
                               { cgh.parallel_for<class swap_phi>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
                                     { swapGrid(d_phinew, d_phiold, item); }); });
     events.push_back(e6);
 
+    freq = freqMan.getAndSetFreq("swapGrid_2");
     kernel_names.push_back("swapGrid_2");
-    sycl::event e7 = q.submit([&](sycl::handler &cgh)
+    sycl::event e7 = q.submit(0, freq, [&](sycl::handler &cgh)
                               { cgh.parallel_for<class swap_u>(
                                     sycl::nd_range<3>(gws, lws), [=](sycl::nd_item<3> item)
                                     { swapGrid(d_unew, d_uold, item); }); });

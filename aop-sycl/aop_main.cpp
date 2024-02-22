@@ -33,6 +33,7 @@
 #include <chrono>
 #include <algorithm>
 #include <synergy.hpp>
+#include "../utils/map_reader.hpp"
 
 #ifdef WITH_FULL_W_MATRIX
 #define R_W_MATRICES_SMEM_SLOTS 15
@@ -41,6 +42,8 @@
 #endif
 
 #define syncthreads() item.barrier(sycl::access::fence_space::local_space)
+
+FreqManager freqMan {std::cin};
 
 struct PayoffCall
 {
@@ -1013,7 +1016,7 @@ static inline void do_run(synergy::queue &q,
   sycl::range<1> lws_gen_paths(NUM_THREADS_PER_BLOCK0);
 
   kernel_names.push_back("generate_paths_kernel");
-  events.push_back(q.submit([&](sycl::handler &cgh)
+  events.push_back(q.submit(0, freqMan.getAndSetFreq("generate_paths_kernel"),[&](sycl::handler &cgh)
                             { cgh.parallel_for<class generate_paths<Payoff>>(
                                   sycl::nd_range<1>(gws_gen_paths, lws_gen_paths), [=](sycl::nd_item<1> item)
                                   { generate_paths_kernel<NUM_THREADS_PER_BLOCK0>(
@@ -1037,7 +1040,7 @@ static inline void do_run(synergy::queue &q,
   sycl::range<1> lws_prepare_svd(NUM_THREADS_PER_BLOCK1);
 
   kernel_names.push_back("prepare_svd_kernel");
-      events.push_back(q.submit([&](sycl::handler &cgh)
+      events.push_back(q.submit(0, freqMan.getAndSetFreq("prepare_svd_kernel"), [&](sycl::handler &cgh)
                                 {
     sycl::local_accessor<int, 1> scan_input(sycl::range<1>(NUM_THREADS_PER_BLOCK1), cgh);
     sycl::local_accessor<int, 1> scan_output(sycl::range<1>(1+NUM_THREADS_PER_BLOCK1), cgh);
@@ -1084,7 +1087,7 @@ static inline void do_run(synergy::queue &q,
     sycl::range<1> gws_partial_beta(NUM_THREADS_PER_BLOCK2 * NUM_THREADS_PER_BLOCK2);
     sycl::range<1> lws_partial_beta(NUM_THREADS_PER_BLOCK2);
     kernel_names.push_back("compute_partial_beta_kernel");
-    events.push_back(q.submit([&](sycl::handler &cgh) {
+    events.push_back(q.submit(0, freqMan.getAndSetFreq("compute_partial_beta_kernel"), [&](sycl::handler &cgh) {
       sycl::local_accessor<sycl::double3, 0> lsums (cgh);
       sycl::local_accessor<double, 1> shared_svds (sycl::range<1>(R_W_MATRICES_SMEM_SLOTS), cgh);
       cgh.parallel_for<class partial_beta<Payoff>>(
@@ -1107,7 +1110,7 @@ static inline void do_run(synergy::queue &q,
     sycl::range<1> gws_final_beta(NUM_THREADS_PER_BLOCK2);
     sycl::range<1> lws_final_beta(NUM_THREADS_PER_BLOCK2);
     kernel_names.push_back("compute_final_beta_kernel");
-    events.push_back(q.submit([&](sycl::handler &cgh)
+    events.push_back(q.submit(0, freqMan.getAndSetFreq("compute_final_beta_kernel"), [&](sycl::handler &cgh)
                               {
       sycl::local_accessor<sycl::double3, 0> lsums (cgh);
       cgh.parallel_for<class final_beta<Payoff>>(
@@ -1122,7 +1125,7 @@ static inline void do_run(synergy::queue &q,
     sycl::range<1> gws_cashflow(update_cashflow_grid * NUM_THREADS_PER_BLOCK2);
     sycl::range<1> lws_cashflow(NUM_THREADS_PER_BLOCK2);
     kernel_names.push_back("update_cashflow_kernel");
-    events.push_back(q.submit([&](sycl::handler &cgh)
+    events.push_back(q.submit(0, freqMan.getAndSetFreq("update_cashflow_kernel"), [&](sycl::handler &cgh)
              { cgh.parallel_for<class update_cashflow<Payoff>>(
                    sycl::nd_range<1>(gws_cashflow, lws_cashflow), [=](sycl::nd_item<1> item)
                    { update_cashflow_kernel<NUM_THREADS_PER_BLOCK2>(
@@ -1145,7 +1148,7 @@ static inline void do_run(synergy::queue &q,
   
   kernel_names.push_back("compute_partial_sums_kernel");
 
-  events.push_back(q.submit([&](sycl::handler &cgh)
+  events.push_back(q.submit(0, freqMan.getAndSetFreq("compute_partial_sums_kernel"), [&](sycl::handler &cgh)
            {
     sycl::local_accessor<double, 0> lsum (cgh);
     cgh.parallel_for<class partial_sums<Payoff>>(
@@ -1162,7 +1165,7 @@ static inline void do_run(synergy::queue &q,
   sycl::range<1> lws_final_sum(NUM_THREADS_PER_BLOCK4);
   kernel_names.push_back("compute_final_sum_kernel");
 
-  events.push_back(q.submit([&](sycl::handler &cgh)
+  events.push_back(q.submit(0, freqMan.getAndSetFreq("compute_final_sum_kernel"), [&](sycl::handler &cgh)
            {
     sycl::local_accessor<double, 0> lsum (cgh);
     cgh.parallel_for<class final_sums<Payoff>>(
