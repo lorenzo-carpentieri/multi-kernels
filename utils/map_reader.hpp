@@ -12,7 +12,11 @@ public:
   };
 
   FreqManager(std::istream& is) {
-    init(is);
+    try {
+      init(is);
+    } catch (std::exception e) {
+      std::cerr << e.what() << std::endl;
+    }
   }
 
   FreqManager() = default;
@@ -24,6 +28,10 @@ public:
 
   double getAndSetFreq(const std::string& key) {
     double freq = 0;
+    if (kernel_freqs.find(key) == kernel_freqs.end()) {
+      std::cerr << "Kernel name '" + key + "' not found" << std::endl;
+      return 0;
+    }
     freq = kernel_freqs[key];
     switch (policy) {
       case FreqChangePolicy::APP:
