@@ -7,6 +7,7 @@
 #define MNIST_DOUBLE
 #include "mnist.h"
 #include "kernels.h"
+#include "../utils/map_reader.hpp"
 
 static mnist_data *train_set, *test_set;
 static unsigned int train_cnt, test_cnt;
@@ -14,6 +15,8 @@ static unsigned int train_cnt, test_cnt;
 std::vector<std::string> kernel_names;
 std::vector<sycl::event> event_list;
 synergy::time_point_t start_time;
+
+FreqManager freqMan {std::cin};
 
 static inline void loaddata()
 {
@@ -333,6 +336,10 @@ static void learn(
     for (unsigned int i = 0; i < train_cnt; i += 50) { // changed from 1 to 50 to reduce the number of iterations
       float tmp_err;  
 
+      q.submit(0, freqMan.getAndSetFreq("phase1"), [&](sycl::handler& cgh) {
+
+      }).wait();
+
       double start_forward_pass_energy = q.get_synergy_device().get_energy_usage();
       forward_pass(q, l_input, l_c1, l_s1, l_f, train_set[i].data);
      
@@ -359,6 +366,11 @@ static void learn(
 
       snrm2(q, 10, l_f.d_preact, tmp_err);
       err += tmp_err;
+
+
+      q.submit(0, freqMan.getAndSetFreq("phase2"), [&](sycl::handler& cgh) {
+
+      }).wait();
 
       back_pass(q, l_input, l_c1, l_s1, l_f);
       double end_back_pass_energy = q.get_synergy_device().get_energy_usage();
@@ -418,6 +430,10 @@ static void test(
   std::cerr << "Testing" << std::endl;
 
   int error = 0;
+
+  q.submit(0, freqMan.getAndSetFreq("phase3"), [&](sycl::handler& cgh) {
+
+  }).wait();
 
   for (unsigned int i = 0; i < test_cnt; i += 100) { // changed from 1 to 1000 to reduce the number of iterations
     if (classify(q, l_input, l_c1, l_s1, l_f, test_set[i].data)

@@ -223,9 +223,6 @@ int main(int argc, char **argv) {
     // printf("[trial %i of %i]\n", trial+1, atrials); fflush(stdout);
     std::cerr << "[trial " << trial+1 << " of " << atrials << "]" << std::endl;
 
-#ifdef FREQ_SCALING
-    q.get_synergy_device().set_core_frequency(1260);
-#endif
     /* distribution for H */
     event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_reset_random_gpupcg"), [&](sycl::handler &cgh) {
       auto apcga_ct2 = apcga[0];
@@ -266,9 +263,10 @@ int main(int argc, char **argv) {
       kernel_names.push_back("kernel_gpupcg_setup");
     }
 
-#ifdef FREQ_SCALING
-    q.get_synergy_device().set_core_frequency(157);
-#endif
+    q.submit(0, freqMan.getAndSetFreq("metropolis_phase"), [&](sycl::handler& cgh) {
+      
+    }).wait();
+
     /* parallel tempering */
     for(int p = 0; p < apts; ++p) {
 
