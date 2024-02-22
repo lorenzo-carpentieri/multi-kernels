@@ -12,14 +12,14 @@ public:
   };
 
   FreqManager(std::istream& is) {
-    kernel_freqs = read_map(is);
+    init(is);
   }
 
   FreqManager() = default;
 
   void init(std::istream& is) {
-    policy = read_policy(is);
-    kernel_freqs = read_map(is);
+    read_policy(is);
+    read_map(is);
   }
 
   double getAndSetFreq(const std::string& key) {
@@ -28,13 +28,15 @@ public:
     switch (policy) {
       case FreqChangePolicy::APP:
         if (freq != 0) {
-          for ( [[maybe_unused]] auto [kv, v] : kernel_freqs) {
+          for (auto [kv, _] : kernel_freqs) {
             kernel_freqs[kv] = 0;
           }
         }
         break;
       case FreqChangePolicy::PHASE:
-        kernel_freqs[key] = 0;
+        if (!keep_freq[key]) {
+          kernel_freqs[key] = 0;
+        }
         break;
       case FreqChangePolicy::KERNEL:
         break;
@@ -58,22 +60,22 @@ public:
     return policyFromString(std::string(s));
   }
 
-  static std::map<std::string, double> read_map(std::istream& is) {
-    std::map<std::string, double> m;
-    std::string key, value;
-    while (is >> key >> value) {
-      m[key] = atof(value.c_str());
+private:
+  void read_map(std::istream& is) {
+    std::string key, value, keep;
+    while (is >> key >> value >> keep) {
+      keep_freq[key] = keep == "KEEP";
+      kernel_freqs[key] = atof(value.c_str());
     }
-    return m;
   }
 
-  static FreqChangePolicy read_policy(std::istream& is) {
+  void read_policy(std::istream& is) { 
     std::string policy;
     is >> policy;
-    return policyFromString(policy);
+    this->policy = policyFromString(policy);
   }
 
-private:
   std::map<std::string, double> kernel_freqs;
+  std::map<std::string, bool> keep_freq;
   FreqChangePolicy policy;
 };
