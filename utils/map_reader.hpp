@@ -36,6 +36,7 @@ public:
 
     double freq = 0;
     freq = kernel_freqs[key];
+    std::cerr << "Retrieved freq " << freq << " on key " << key << std::endl;
     switch (policy) {
       case FreqChangePolicy::APP:
         if (freq != 0) {
