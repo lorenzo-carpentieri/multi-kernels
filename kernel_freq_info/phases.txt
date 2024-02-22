@@ -94,16 +94,16 @@
 * PHASES are the same of forward pass in learn
  * for i in test_cnt:
  *    START CLASSIFY FUNC
-   *       START FORWARDPASS FUNC
-   *      -> fw_preact_c1 (1170)
-   *      -> fw_bias_c1 (247)
-   *      -> c1_step (180)
-   *      -> preact_s1 (180)
-   *      -> fw_bias_s1 (1282)
-   *      -> s1_step (157)
-   *      -> preact_f (675)
-   *      -> fw_bias_f (405)
-   *      -> f_step (1507)
-   *       END FORWARDPASS FUNC
+ *       START FORWARDPASS FUNC
+ *       -> fw_preact_c1 (1170)
+ *       -> fw_bias_c1 (247)
+ *       -> c1_step (180)
+ *       -> preact_s1 (180)
+ *       -> fw_bias_s1 (1282)
+ *       -> s1_step (157)
+ *       -> preact_f (675)
+ *       -> fw_bias_f (405)
+ *       -> f_step (1507)
+ *       END FORWARDPASS FUNC
  *    END CLASSIFY FUNC
  *********************************/
