@@ -1,0 +1,109 @@
+/**************** ACE ***************
+ * for t in num_steps:
+ *    -> calculateForce (PHASE-1 1035)
+ *    -> allenCahn
+ *    -> boundaryConditionsPhi (PHASE-2 607)
+ *    -> thermalEquation (PHASE-3 202)
+ *    -> boundaryConditionsU
+ *    -> swapGrid_1
+ *    -> swapGrid_2
+***************************************/
+
+/************* AOP ***********************
+   *  -> generate_paths_kernel (990) (PHASE-1 990or 1080)
+   *  -> prepare_svd_kernel (1080)
+   *  for (int timestep = num_timesteps - 2; timestep >= 0; --timestep) (PHASE-2 ?? Dovrei selezionare la frequenza del kernel che più mi permette di salvare energia probabilmente 945)
+   *    -> compute_partial_beta_kernel (225)
+   *    -> compute_final_beta_kernel (945)
+   *    -> update_cashflow_kernel (382)
+   *  
+   *  -> compute_partial_sums_kernel (180) (PHASE-3 202 se nella PHASE-2 ho scelto 945 )
+   *  -> compute_final_sum_kernel (202)
+*******************************************/
+
+/************ METROPOLIS ********************
+   * for trial in atrials:
+   *    -> kernel_reset_random_gpupcg (PHASE-1 1237)
+   *    for k in ar: (PHASE-2 ??) Penso la scelta dipenda da qualche kernel impiega più tempo e ci permette di salvare maggiore energia
+   *      -> kernel_reset (315)
+   *      -> kernel_gpupcg_setup (1260)
+   *    for p in apts: (PHASE-3 157)
+   *       for i in  ams:
+   *          for k in ar
+   *             ->kernel_metropolis
+   *          
+   *           for k in ar
+   *             ->kernel_metropolis
+   * 
+   *       -> kernel_reset (315) Qui non conviene cambiare la  frequenza se il kernel dura poco ma conviene lasciare 157 visto che poi i kernel successivi sono ottimizzati per 157
+   * 
+   *        for k in ar: 
+   *          -> kernel_redenergy (157)
+  **********************************************/
+
+
+
+  /***************** SRAD ****************
+   * -> extract (PHASE-1 900)
+   * for iter in n_iter:  (PHASE-2 1080 posso scegliere una sola frequenza per tutto il for considerando il kernel che più mida energy improvement probabilemente reduce)
+   *    -> prepare (945)
+   *    -> reduce  (1080)
+   *    -> srad (180)  (PHASE-3 180)
+   *    -> srad2 (135)
+   * 
+   * -> compress (135) (PHASE-3 or PHASE-4 135 dipende da cosa ho fatto nel for sopra probabilmente non mi conviene fare alcun cambiamento visto che il kernel viene eseguito una sola volta a meno che non duri molto  e mi permette di salvare molta energia)
+   ***************************************/
+
+  
+  
+  /*********** MNIST-LEARN *************
+   * for iter in iters:
+   *    for i in train_cnt:
+   *       START FORWARDPASS FUNC
+   *      -> fw_preact_c1 (1170)
+   *      -> fw_bias_c1 (247)
+   *      -> c1_step (180)
+   *      -> preact_s1 (180)
+   *      -> fw_bias_s1 (1282)
+   *      -> s1_step (157)
+   *      -> preact_f (675)
+   *      -> fw_bias_f (405)
+   *      -> f_step (1507)
+   *       END FORWARDPASS FUNC
+   * 
+   *      -> err
+   * 
+   *      START BACKPASS FUNC
+   *      -> bw_weight_f (360)
+   *      -> bw_bias_f (202)
+   *      -> bw_output_s1 (1260)
+   *      -> bw_preact_s1 (157)
+   *      -> bw_weight_s1 (180)
+   *      -> bw_bias_s1 (225)
+   *      -> bw_output_c1 (315)
+   *      -> bw_preact_c1 (360)
+   *      -> bw_weight_c1 (135)
+   *      -> bw_bias_c1 (202)
+   *      -> l_f_grad (225)
+   *      -> l_s1_grad (180)
+   *      -> l_c1_grad (675)
+   *      END BACKPASS FUNC
+**************************************/
+
+/***********MNIST TEST *********** 
+* PHASES are the same of forward pass in learn
+ * for i in test_cnt:
+ *    START CLASSIFY FUNC
+   *       START FORWARDPASS FUNC
+   *      -> fw_preact_c1 (1170)
+   *      -> fw_bias_c1 (247)
+   *      -> c1_step (180)
+   *      -> preact_s1 (180)
+   *      -> fw_bias_s1 (1282)
+   *      -> s1_step (157)
+   *      -> preact_f (675)
+   *      -> fw_bias_f (405)
+   *      -> f_step (1507)
+   *       END FORWARDPASS FUNC
+ *    END CLASSIFY FUNC
+ *********************************/
