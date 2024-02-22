@@ -326,7 +326,7 @@ void initializationU(double u[][DATAYSIZE][DATAXSIZE], double r0, double delta)
 int main(int argc, char *argv[])
 {
   FreqManager freqMan = FreqManager(std::cin);
-  const int num_steps = atoi(argv[2]); // 6000;
+  const int num_steps = atoi(argv[1]); // 6000;
   const double dx = 0.4;
   const double dy = 0.4;
   const double dz = 0.4;
@@ -395,8 +395,8 @@ int main(int argc, char *argv[])
   std::vector<sycl::event> events;
   std::vector<synergy::time_point_t> start_times;
   std::vector<std::string> kernel_names;
-
-  while (t <= num_steps)
+  
+  while (t < num_steps)
   {
     auto freq = freqMan.getAndSetFreq("calculateForce");
     kernel_names.push_back("calculateForce");
