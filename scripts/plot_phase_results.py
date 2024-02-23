@@ -10,18 +10,25 @@ sns.set_theme()
 
 bar_width = 0.3
 padding = 15
+time_y_lims = (0.5, 3)
+energy_y_lims = (0.5, 3)
+metric = "total"
+hline_style = {"color": "red", "ls": "dashed", "lw": "0.7"}
+# plt.figure(figsize=(10, 5))
+
 
 def plot_energy(df_app: pd.DataFrame, df_phase: pd.DataFrame, df_kernel: pd.DataFrame):
     x = np.arange(len(df_app) * (3 * bar_width))
     x_labels = [str(d) for d in df_app.index]
 
-    norm = df_app['total_energy']
+    norm = df_app[f'{metric}_energy']
 
-    plt.bar(x - bar_width, norm / df_app['total_energy'], width=bar_width)
-    plt.bar(x, norm / df_phase['total_energy'], width=bar_width) 
-    plt.bar(x + bar_width, norm / df_kernel['total_energy'], width=bar_width)
+    bars2 = plt.bar(x - (bar_width / 2), df_phase[f'{metric}_energy'] / norm, width=bar_width) 
+    bars3 = plt.bar(x + (bar_width / 2), df_kernel[f'{metric}_energy'] / norm, width=bar_width)
 
-    # plt.ylim(0.5, 2)
+    plt.axhline(1, **hline_style)
+
+    # plt.ylim(*energy_y_lims)
     plt.xticks(x, labels=x_labels)
     plt.ylabel("Normalized")
 
@@ -29,13 +36,14 @@ def plot_time(df_app: pd.DataFrame, df_phase: pd.DataFrame, df_kernel: pd.DataFr
     x = np.arange(len(df_app) * (3 * bar_width))
     x_labels = [str(d) for d in df_app.index]
 
-    norm = df_app['total_time']
+    norm = df_app[f'{metric}_time']
 
-    plt.bar(x - bar_width, norm / df_app['total_time'], width=bar_width)
-    plt.bar(x, norm / df_phase['total_time'], width=bar_width) 
-    plt.bar(x + bar_width, norm / df_kernel['total_time'], width=bar_width)
+    plt.bar(x - (bar_width / 2), norm / df_phase[f'{metric}_time'], width=bar_width) 
+    plt.bar(x + (bar_width / 2), norm / df_kernel[f'{metric}_time'], width=bar_width)
 
-    # plt.ylim(0.5, 2)
+    plt.axhline(1, **hline_style)
+
+    # plt.ylim(*time_y_lims)
     plt.xticks(x, labels=x_labels)
     plt.ylabel("Speedup")
     
@@ -50,12 +58,17 @@ def get_values(df: pd.DataFrame):
     return l
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print(f"Usage: {sys.argv[0]} <log_dir> <out_dir>")
+    if len(sys.argv) != 4:
+        print(f"Usage: {sys.argv[0]} <total|kernels> <log_dir> <out_dir>")
         exit(1)
 
-    log_dir = sys.argv[1]
-    out_dir = sys.argv[2]
+    metric = sys.argv[1]
+    if (metric != "total" and metric != "kernels"):
+        print("metric can be `total` or `kernels`")
+        exit(1)
+
+    log_dir = sys.argv[2]
+    out_dir = sys.argv[3]
 
     dirs = glob.glob(f"{log_dir}/*")
     cols = ['total_time', 'kernels_time', 'total_energy', 'kernels_energy']

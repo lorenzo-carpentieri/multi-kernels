@@ -53,7 +53,7 @@ if [[ $curr_benches == *"aop"* ]]; then
 mkdir -p $LOG_DIR/aop/
 echo "[*] Running AOP"
 timesteps=50 # 100
-num_paths=24576 # 32
+num_paths=128 # 24576 # 32
 num_runs=1 # 1
 T=1.0 # 1.0
 K=4.0 # 4.0
@@ -101,8 +101,8 @@ mkdir -p $LOG_DIR/srad/
 echo "[*] Running SRAD"
 num_iters=1
 lambda=1
-number_of_rows=16384 # 512
-number_of_cols=16384 # 512
+number_of_rows=512 #16384 #512
+number_of_cols=512 #16384 #512
 cat $CONF_DIR/app/mnist.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_app.csv 2> $LOG_DIR/srad/srad_app.log
 cat $CONF_DIR/phase/mnist.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_phase.csv 2> $LOG_DIR/srad/srad_phase.log
 cat $CONF_DIR/kernel/mnist.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_kernel.csv 2> $LOG_DIR/srad/srad_kernel.log
