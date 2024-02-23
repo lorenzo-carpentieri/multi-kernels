@@ -37,6 +37,8 @@ for bench_folder in os.listdir(logs_path):
         tmp_df = pd.read_csv(f'{bench_path}/{file}')
         df = pd.concat([df, tmp_df], ignore_index=True)
     
+  
+
     # group the data in df for kernel name so we can have a df for each kernel names that contains info for all the freqs.
     grouped_df = df.groupby('kernel_name')
 
@@ -56,10 +58,22 @@ for bench_folder in os.listdir(logs_path):
             'max_perf_freq': [core_freq_max_perf]
         }
         tmp_kernel_row_info_freq_df = pd.DataFrame(data)
-        kernels_freq_info_df = pd.concat([kernels_freq_info_df, tmp_kernel_row_info_freq_df], ignore_index=True)
+        # kernels_freq_info_df = pd.concat([kernels_freq_info_df, tmp_kernel_row_info_freq_df], ignore_index=True)
+        if not kernels_freq_info_df.empty and not tmp_kernel_row_info_freq_df.empty:
+            kernels_freq_info_df = pd.concat([kernels_freq_info_df, tmp_kernel_row_info_freq_df], axis=0)
+        elif not kernels_freq_info_df.empty:
+            kernels_freq_info_df = kernels_freq_info_df.copy()
+        elif not tmp_kernel_row_info_freq_df.empty:
+            kernels_freq_info_df = tmp_kernel_row_info_freq_df.copy()
+        else:
+            kernels_freq_info_df = pd.DataFrame()
+
+
     
     kernels_freq_info_df.to_csv(f'{out_path}/{bench_folder}.csv', index=False)
+    min_device_energy_index = df_kernel['total_device_energy[j]'].idxmin()
+    core_freq_min_device_energy = df.loc[min_device_energy_index, 'core_freq [MHz]']
+    
+    print(core_freq_min_device_energy)
 
-    print(kernels_freq_info_df)
-
-
+print("\n\n--------END---------")
