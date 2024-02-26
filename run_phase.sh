@@ -120,9 +120,9 @@ for it in $(seq 1 $num_runs); do
   lambda=1
   number_of_rows=16384 #512
   number_of_cols=16384 #512
-  cat $CONF_DIR/app/mnist.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_app$it.csv 2> $LOG_DIR/srad/srad_app$it.log
-  cat $CONF_DIR/phase/mnist.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_phase$it.csv 2> $LOG_DIR/srad/srad_phase$it.log
-  cat $CONF_DIR/kernel/mnist.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_kernel$it.csv 2> $LOG_DIR/srad/srad_kernel$it.log
+  cat $CONF_DIR/app/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_app$it.csv 2> $LOG_DIR/srad/srad_app$it.log
+  cat $CONF_DIR/phase/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_phase$it.csv 2> $LOG_DIR/srad/srad_phase$it.log
+  cat $CONF_DIR/kernel/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_kernel$it.csv 2> $LOG_DIR/srad/srad_kernel$it.log
   fi
 done
 
