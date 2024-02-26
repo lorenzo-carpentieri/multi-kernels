@@ -3,11 +3,17 @@
 benches=("ace" "aop" "bh" "metropolis" "mnist" "srad")
 curr_benches="ace,aop,bh,metropolis,mnist,srad"
 sampling=3
+log_dir=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --benchmarks=*)
       curr_benches="${1#*=}"
+      shift
+      ;;
+    -o | --output-dir)
+      log_dir=$2
+      shift
       shift
       ;;
     *)
@@ -17,6 +23,12 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# check log dir
+if [ -z "$log_dir" ]; then
+  echo "Output directory not specified"
+  exit 1
+fi
 
 # check if selected benchmarks are valid
 for bench in $(echo $curr_benches | tr "," "\n")
@@ -30,12 +42,9 @@ done
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 EXEC_DIR=$SCRIPT_DIR/build
-LOG_DIR=$SCRIPT_DIR/logs/profiling
-mkdir -p $SCRIPT_DIR/logs
+LOG_DIR=$log_dir
 
 cd $EXEC_DIR
-
-mkdir -p $LOG_DIR
 
 # only for nvidia gpu, for intel gpu we have a min and max 
 def_core=""
