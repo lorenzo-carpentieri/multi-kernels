@@ -10,9 +10,14 @@ from pathlib import Path
 
 # Now you can use this data to select the freq configuration that optimize a specific target min_energy, max_perf
 
+if len(sys.argv) != 2:
+    print(f"Usage: {sys.argv[0]} <logs_path>")
+    exit(1)
+
 script_path = Path(f'{sys.argv[0]}/../').resolve()
-logs_path = Path(f'{script_path}/../logs').resolve() 
- 
+logs_path = Path(f'{script_path}/../logs/profiling').resolve() 
+logs_path = sys.argv[1]
+
 out_path = Path(f'{script_path}/../kernel_freq_info').resolve()
 print(script_path)
 print(logs_path)
@@ -33,6 +38,7 @@ for bench_folder in os.listdir(logs_path):
 
         if not file.endswith('.csv'):
             continue
+        
         # the tmp_df contains the data for a specific core_freq
         tmp_df = pd.read_csv(f'{bench_path}/{file}')
         df = pd.concat([df, tmp_df], ignore_index=True)
