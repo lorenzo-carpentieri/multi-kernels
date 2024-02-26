@@ -42,7 +42,8 @@ done
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 EXEC_DIR=$SCRIPT_DIR/build
-LOG_DIR=$log_dir
+cd $log_dir
+LOG_DIR=$(pwd)
 
 cd $EXEC_DIR
 
@@ -135,8 +136,8 @@ for core_freq in "${sampled_freq[@]}"; do
     echo "[*] Running SRAD"
     num_iters=1
     lambda=1
-    number_of_rows=16384 # 512
-    number_of_cols=16384 # 512
+    number_of_rows=3096 #512
+    number_of_cols=3096 #512
     ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_${mem_freq}_${core_freq}.csv 2> $LOG_DIR/srad/srad_${mem_freq}_${core_freq}.log
   fi
 done
