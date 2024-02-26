@@ -50,11 +50,10 @@ if __name__ == '__main__':
     exit(1)
   
   log_dir = sys.argv[1]
-  out_dir = sys.argv[2]
-  
-  os.makedirs(out_dir, exist_ok=True)
+  outfile = sys.argv[2]
+
   
   df = parse_phase_logs(log_dir)
-  df.to_csv(os.path.join(out_dir, "phase_results.csv"), index=False)
+  df.to_csv(outfile, index=False)
   
   
