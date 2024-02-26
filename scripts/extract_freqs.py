@@ -53,7 +53,7 @@ for bench_folder in os.listdir(logs_path):
     for group_name in grouped_df.groups:
         df_kernel = grouped_df.get_group(group_name)
         min_energy_index = df_kernel['kernel_energy[j]'].idxmin()
-        max_perf_index = df_kernel['times[ms]'].idxmax()
+        max_perf_index = df_kernel['times[ms]'].idxmin()
 
         core_freq_min_energy = df.loc[min_energy_index, 'core_freq [MHz]']
         core_freq_max_perf = df.loc[max_perf_index, 'core_freq [MHz]']
