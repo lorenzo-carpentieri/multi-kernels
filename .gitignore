@@ -5,3 +5,4 @@ logs/*
 *.dat
 plot
 parsed
+kernel_freq_info/*.csv
