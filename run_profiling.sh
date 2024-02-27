@@ -150,8 +150,8 @@ for core_freq in "${sampled_freq[@]}"; do
     echo "[*] Running SRAD"
     num_iters=1
     lambda=1
-    number_of_rows=3096 #512
-    number_of_cols=3096 #512
+    number_of_rows=1024 #512
+    number_of_cols=1024 #512
     ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_${mem_freq}_${core_freq}.csv 2> $LOG_DIR/srad/srad_${mem_freq}_${core_freq}.log
   fi
 done
