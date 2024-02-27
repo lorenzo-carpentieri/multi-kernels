@@ -70,7 +70,7 @@ for it in $(seq 1 $num_runs); do
   mkdir -p $LOG_DIR/aop/
   echo "[*] Running AOP"
   timesteps=50 # 100
-  num_paths=128 # 24576 # 32
+  num_paths=24576 # 32
   num_runs=1 # 1
   T=1.0 # 1.0
   K=4.0 # 4.0
@@ -118,8 +118,8 @@ for it in $(seq 1 $num_runs); do
   echo "[*] Running SRAD"
   num_iters=1
   lambda=1
-  number_of_rows=8192 #16384 #512
-  number_of_cols=8192 #16384 #512
+  number_of_rows=3096 #16384 #512
+  number_of_cols=3096 #16384 #512
   cat $CONF_DIR/app/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_app$it.csv 2> $LOG_DIR/srad/srad_app$it.log
   cat $CONF_DIR/phase/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_phase$it.csv 2> $LOG_DIR/srad/srad_phase$it.log
   cat $CONF_DIR/kernel/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_kernel$it.csv 2> $LOG_DIR/srad/srad_kernel$it.log
