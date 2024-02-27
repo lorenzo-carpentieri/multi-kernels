@@ -13,7 +13,7 @@ sns.set_theme()
 metric = "total"
 bar_width = 0.4
 padding = 0
-time_y_lims = (0.5, 3)
+time_y_lims = (0.5, 5)
 energy_y_lims = (0, 1.5)
 rotation=20
 hline_style = {"color": "red", "ls": "dashed", "lw": "0.7"}
@@ -70,8 +70,10 @@ def plot_time(df_app: pd.DataFrame, df_phase: pd.DataFrame, df_kernel: pd.DataFr
 
     for bar in merged_bars:
         yval = bar.get_height()
-        if yval > time_y_lims[1]:
-            plt.text(bar.get_x() + bar.get_width()/2, time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
+        # if yval > time_y_lims[1]:
+        #     plt.text(bar.get_x() + bar.get_width()/2, time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
+        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() if bar.get_height() < time_y_lims[1] else time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
+
             
     # for i, bar in enumerate(merged_bars):
     #     text = "Per-Phase" if i % 2 == 0 else "Per-Kernel"
@@ -103,7 +105,7 @@ def get_values(df: pd.DataFrame, name: str, approach: str):
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        print(f"Usage: {sys.argv[0]} <total|kernels> <log_dir> <out_dir>")
+        print(f"Usage: {sys.argv[0]} <total|kernels> <dataset> <out_dir>")
         exit(1)
 
     metric = sys.argv[1]
