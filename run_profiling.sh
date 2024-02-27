@@ -5,6 +5,15 @@ curr_benches="ace,aop,bh,metropolis,mnist,srad"
 sampling=3
 log_dir=""
 
+# define help function
+function help {
+  echo "Usage: run_profiling.sh [OPTIONS]"
+  echo "Options:"
+  echo "  --benchmarks=ace,aop,bh,metropolis,mnist,srad"
+  echo "  -o, --output-dir"
+  echo "  -h, --help"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --benchmarks=*)
@@ -15,6 +24,11 @@ while [[ $# -gt 0 ]]; do
       log_dir=$2
       shift
       shift
+      ;;
+    -h | --help)
+      help
+      return 0 2>/dev/null
+      exit 0
       ;;
     *)
     echo "Invalid argument: $1"

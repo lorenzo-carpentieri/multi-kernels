@@ -2,11 +2,23 @@
 
 parse_data=false
 
+function help {
+  echo "Usage: process_phase.sh [OPTIONS]"
+  echo "Options:"
+  echo "  --parse"
+  echo "  -h, --help"
+}
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --parse)
       parse_data=true
       shift
+      ;;
+    -h | --help)
+      help
+      return 0 2>/dev/null
+      exit 0
       ;;
     *)
     echo "Invalid argument: $1"
