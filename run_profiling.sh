@@ -7,7 +7,7 @@ log_dir=""
 
 # define help function
 function help {
-  echo "Usage: run_profiling.sh [OPTIONS]"
+  echo "Usage: run_profiling.sh -o out_dir [OPTIONS]"
   echo "Options:"
   echo "  --benchmarks=ace,aop,bh,metropolis,mnist,srad"
   echo "  -o, --output-dir"
@@ -18,6 +18,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --benchmarks=*)
       curr_benches="${1#*=}"
+      shift
+      ;;
+    --sampling=*)
+      sampling="${1#*=}"
       shift
       ;;
     -o | --output-dir)
@@ -94,17 +98,16 @@ for core_freq in "${sampled_freq[@]}"; do
   echo "[*] core_freq:  $core_freq"
 
   # ACE
-  mkdir -p $LOG_DIR/ace/
   if [[ $curr_benches == *"ace"* ]]; then
+    mkdir -p $LOG_DIR/ace/
     echo "[*] Running ACE"
     num_runs=1
     ./ace_main $num_runs > $LOG_DIR/ace/ace_${mem_freq}_${core_freq}.csv 2> $LOG_DIR/ace/ace_${mem_freq}_${core_freq}.log
   fi
 
   # AOP TODO: fix energy consumption
-  mkdir -p $LOG_DIR/aop/
-
   if [[ $curr_benches == *"aop"* ]]; then
+    mkdir -p $LOG_DIR/aop/
     echo "[*] Running AOP"
     timesteps=50 # 100
     num_paths=24576 # 32
@@ -119,9 +122,9 @@ for core_freq in "${sampled_freq[@]}"; do
       -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put > $LOG_DIR/aop/aop_${mem_freq}_${core_freq}.csv 2> $LOG_DIR/aop/aop_${mem_freq}_${core_freq}.log
   fi
 
-  mkdir -p $LOG_DIR/metropolis/
   # Metropolis
   if [[ $curr_benches == *"metropolis"* ]]; then
+    mkdir -p $LOG_DIR/metropolis/
     echo "[*] Running Metropolis"
     L=1024 # 32
     R=1 # 1
@@ -136,22 +139,22 @@ for core_freq in "${sampled_freq[@]}"; do
     ./metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed > $LOG_DIR/metropolis/metropolis_${mem_freq}_${core_freq}.csv 2> $LOG_DIR/metropolis/metropolis_${mem_freq}_${core_freq}.log
   fi
 
-  mkdir -p $LOG_DIR/mnist
   # Mnist TODO: fix energy consumption
   if [[ $curr_benches == *"mnist"* ]]; then
+    mkdir -p $LOG_DIR/mnist
     echo "[*] Running MNIST"
     num_iters=1 # 1 
     ./mnist_main $num_iters > $LOG_DIR/mnist/mnist_${mem_freq}_${core_freq}.csv 2> $LOG_DIR/mnist/mnist_${mem_freq}_${core_freq}.log
   fi
 
-  mkdir -p $LOG_DIR/srad/
   # Srad
   if [[ $curr_benches == *"srad"* ]]; then
+    mkdir -p $LOG_DIR/srad/
     echo "[*] Running SRAD"
-    num_iters=1
+    num_iters=100
     lambda=1
-    number_of_rows=1024 #512
-    number_of_cols=1024 #512
+    number_of_rows=2048 #512
+    number_of_cols=2048 #512
     ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_${mem_freq}_${core_freq}.csv 2> $LOG_DIR/srad/srad_${mem_freq}_${core_freq}.log
   fi
 done
