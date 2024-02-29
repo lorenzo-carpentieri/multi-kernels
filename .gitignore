@@ -6,3 +6,7 @@ logs/*
 plot
 parsed
 kernel_freq_info/*.csv
+/*.py
+/*.log
+/*.csv
+*.tar
