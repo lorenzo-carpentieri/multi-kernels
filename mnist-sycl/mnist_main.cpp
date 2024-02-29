@@ -67,7 +67,7 @@ void forward_pass(
   sycl::range<1> lws (64);
 
   // fp_preact_c1<<<64, 64>>>((float (*)[28])l_input.output, (float (*)[24][24])l_c1.preact, (float (*)[5][5])l_c1.weight);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("fw_preact_c1"), [&] (sycl::handler &cgh) {
     auto o = (float (*)[28])l_input.output;
     auto p = (float (*)[24][24])l_c1.preact;
     auto w = (float (*)[5][5])l_c1.weight;
@@ -79,7 +79,7 @@ void forward_pass(
 
   // fp_bias_c1<<<64, 64>>>((float (*)[24][24])l_c1.preact, l_c1.bias);
   // auto c1_p_re = l_c1.preact.reinterpret<float[24][24]>(range<1>(6));
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("fw_bias_c1"), [&] (sycl::handler &cgh) {
     auto p = (float (*)[24][24])l_c1.preact;
     auto b = l_c1.bias;
     cgh.parallel_for<class fw_bias_c1>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -89,7 +89,7 @@ void forward_pass(
   kernel_names.push_back("fw_bias_c1");
 
   // apply_step_function<<<64, 64>>>(l_c1.preact, l_c1.output, l_c1.O);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("c1_step"), [&] (sycl::handler &cgh) {
     auto p = l_c1.preact;
     auto o = l_c1.output;
     auto l_c1_O = l_c1.O;
@@ -100,7 +100,7 @@ void forward_pass(
   kernel_names.push_back("c1_step");
 
   // fp_preact_s1<<<64, 64>>>((float (*)[24][24])l_c1.output, (float (*)[6][6])l_s1.preact, (float (*)[4][4])l_s1.weight);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("preact_s1"), [&] (sycl::handler &cgh) {
     auto o = (float (*)[24][24])l_c1.output;
     auto p = (float (*)[6][6])l_s1.preact;
     auto w = (float (*)[4][4])l_s1.weight;
@@ -112,7 +112,7 @@ void forward_pass(
 
   // fp_bias_s1<<<64, 64>>>((float (*)[6][6])l_s1.preact, l_s1.bias);
   //auto s1_p_re = l_s1.preact.reinterpret<float[6][6]>(range<1>(6));
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("fw_bias_s1"), [&] (sycl::handler &cgh) {
     auto p = (float (*)[6][6])l_s1.preact;
     auto b = l_s1.bias;
     cgh.parallel_for<class fw_bias_s1>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -124,7 +124,7 @@ void forward_pass(
 
   // apply_step_function<<<64, 64>>>(l_s1.preact, l_s1.output, l_s1.O);
   const int l_s1_O = l_s1.O;
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("s1_step"), [&] (sycl::handler &cgh) {
     auto p = l_s1.preact;
     auto o = l_s1.output;
     cgh.parallel_for<class s1_step>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -134,7 +134,7 @@ void forward_pass(
   kernel_names.push_back("s1_step");
 
   //fp_preact_f<<<64, 64>>>((float (*)[6][6])l_s1.output, l_f.preact, (float (*)[6][6][6])l_f.weight);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("preact_f"), [&] (sycl::handler &cgh) {
     auto o = (float (*)[6][6])l_s1.output;
     auto p = l_f.preact;
     auto w = (float (*)[6][6][6])l_f.weight;
@@ -145,7 +145,7 @@ void forward_pass(
   kernel_names.push_back("preact_f");
 
   // fp_bias_f<<<64, 64>>>(l_f.preact, l_f.bias);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("fw_bias_f"), [&] (sycl::handler &cgh) {
     auto p = l_f.preact;
     auto b = l_f.bias;
     cgh.parallel_for<class fw_bias_f>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -155,7 +155,7 @@ void forward_pass(
   kernel_names.push_back("fw_bias_f");
 
   // apply_step_function<<<64, 64>>>(l_f.preact, l_f.output, l_f.O);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("f_step"), [&] (sycl::handler &cgh) {
     auto p = l_f.preact;
     auto o = l_f.output;
     auto l_f_O = l_f.O;
@@ -178,7 +178,7 @@ void back_pass(
   sycl::range<1> lws (64);
 
   // bp_weight_f<<<64, 64>>>((float (*)[6][6][6])l_f.d_weight, l_f.d_preact, (float (*)[6][6])l_s1.output);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_weight_f"), [&] (sycl::handler &cgh) {
     auto dw = (float (*)[6][6][6])l_f.d_weight;
     auto dp = l_f.d_preact;
     auto o = (float (*)[6][6])l_s1.output;
@@ -189,7 +189,7 @@ void back_pass(
   kernel_names.push_back("bw_weight_f");
 
   // bp_bias_f<<<64, 64>>>(l_f.bias, l_f.d_preact);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_bias_f"), [&] (sycl::handler &cgh) {
     auto b = l_f.bias;
     auto dp = l_f.d_preact;
     cgh.parallel_for<class bw_bias_f>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -199,7 +199,7 @@ void back_pass(
   kernel_names.push_back("bw_bias_f");
 
   // bp_output_s1<<<64, 64>>>((float (*)[6][6])l_s1.d_output, (float (*)[6][6][6])l_f.weight, l_f.d_preact);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_output_s1"), [&] (sycl::handler &cgh) {
     auto  o = (float (*)[6][6])l_s1.d_output;
     auto  w = (float (*)[6][6][6])l_f.weight;
     auto dp = l_f.d_preact;
@@ -210,7 +210,7 @@ void back_pass(
   kernel_names.push_back("bw_output_s1");
 
   //bp_preact_s1<<<64, 64>>>((float (*)[6][6])l_s1.d_preact, (float (*)[6][6])l_s1.d_output, (float (*)[6][6])l_s1.preact);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_preact_s1"), [&] (sycl::handler &cgh) {
     auto dp = (float (*)[6][6])l_s1.d_preact;
     auto  o = (float (*)[6][6])l_s1.d_output;
     auto  p = (float (*)[6][6])l_s1.preact;
@@ -221,7 +221,7 @@ void back_pass(
   kernel_names.push_back("bw_preact_s1");
 
   // bp_weight_s1<<<64, 64>>>((float (*)[4][4])l_s1.d_weight, (float (*)[6][6])l_s1.d_preact, (float (*)[24][24])l_c1.output);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_weight_s1"), [&] (sycl::handler &cgh) {
     auto dw = (float (*)[4][4])l_s1.d_weight;
     auto dp = (float (*)[6][6])l_s1.d_preact;
     auto o = (float (*)[24][24])l_c1.output;
@@ -232,7 +232,7 @@ void back_pass(
   kernel_names.push_back("bw_weight_s1");
 
   // bp_bias_s1<<<64, 64>>>(l_s1.bias, (float (*)[6][6])l_s1.d_preact);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_bias_s1"), [&] (sycl::handler &cgh) {
     auto b = l_s1.bias;
     auto dp = (float (*)[6][6])l_s1.d_preact;
     cgh.parallel_for<class bw_bias_s1>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -242,7 +242,7 @@ void back_pass(
   kernel_names.push_back("bw_bias_s1");
 
   // bp_output_c1<<<64, 64>>>((float (*)[24][24])l_c1.d_output, (float (*)[4][4])l_s1.weight, (float (*)[6][6])l_s1.d_preact);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_output_c1"), [&] (sycl::handler &cgh) {
     auto  o = (float (*)[24][24])l_c1.d_output;
     auto  w = (float (*)[4][4])l_s1.weight;
     auto dp = (float (*)[6][6])l_s1.d_preact;
@@ -253,7 +253,7 @@ void back_pass(
   kernel_names.push_back("bw_output_c1");
 
   // bp_preact_c1<<<64, 64>>>((float (*)[24][24])l_c1.d_preact, (float (*)[24][24])l_c1.d_output, (float (*)[24][24])l_c1.preact);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_preact_c1"), [&] (sycl::handler &cgh) {
     auto dp = (float (*)[24][24])l_c1.d_preact;
     auto  o = (float (*)[24][24])l_c1.d_output;
     auto p = (float (*)[24][24])l_c1.preact;
@@ -264,7 +264,7 @@ void back_pass(
   kernel_names.push_back("bw_preact_c1");
 
   // bp_weight_c1<<<64, 64>>>((float (*)[5][5])l_c1.d_weight, (float (*)[24][24])l_c1.d_preact, (float (*)[28])l_input.output);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_weight_c1"), [&] (sycl::handler &cgh) {
     auto dw = (float (*)[5][5])l_c1.d_weight;
     auto dp = (float (*)[24][24])l_c1.d_preact;
     auto o = (float (*)[28])l_input.output;
@@ -275,7 +275,7 @@ void back_pass(
   kernel_names.push_back("bw_weight_c1");
 
   // bp_bias_c1<<<64, 64>>>(l_c1.bias, (float (*)[24][24])l_c1.d_preact);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("bw_bias_c1"), [&] (sycl::handler &cgh) {
     auto b = l_c1.bias;
     auto dp = (float (*)[24][24])l_c1.d_preact;
     cgh.parallel_for<class bw_bias_c1>(sycl::nd_range<1>(gws, lws), [=] (sycl::nd_item<1> item) {
@@ -285,7 +285,7 @@ void back_pass(
   kernel_names.push_back("bw_bias_c1");
 
   // apply_grad<<<64, 64>>>(l_f.weight, l_f.d_weight, l_f.M * l_f.N);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("l_f_grad"), [&] (sycl::handler &cgh) {
     auto w = l_f.weight;
     auto dw = l_f.d_weight;
     auto l_f_mn = l_f.M * l_f.N;
@@ -296,7 +296,7 @@ void back_pass(
   kernel_names.push_back("l_f_grad");
 
   // apply_grad<<<64, 64>>>(l_s1.weight, l_s1.d_weight, l_s1.M * l_s1.N);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("l_s1_grad"), [&] (sycl::handler &cgh) {
     auto w = l_s1.weight;
     auto dw = l_s1.d_weight;
     auto l_s1_mn = l_s1.M * l_s1.N;
@@ -307,7 +307,7 @@ void back_pass(
   kernel_names.push_back("l_s1_grad");
 
   // apply_grad<<<64, 64>>>(l_c1.weight, l_c1.d_weight, l_c1.M * l_c1.N);
-  event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+  event_list.push_back(q.submit(0, freqMan.getAndSetFreq("l_c1_grad"), [&] (sycl::handler &cgh) {
     auto w = l_c1.weight;
     auto dw = l_c1.d_weight;
     auto l_c1_mn = l_c1.M * l_c1.N;
@@ -333,7 +333,7 @@ static void learn(
   while (iter < 0 || iter-- > 0) {
     err = 0.0f;
 
-    for (unsigned int i = 0; i < train_cnt; i += 50) { // changed from 1 to 50 to reduce the number of iterations
+    for (unsigned int i = 0; i < train_cnt; i += 1000) { // changed from 1 to 50 to reduce the number of iterations
       float tmp_err;  
 
       q.submit(0, freqMan.getAndSetFreq("phase1"), [&](sycl::handler& cgh) {
@@ -353,7 +353,7 @@ static void learn(
       sycl::range<1> gws (10);
       sycl::range<1> lws (1);
       // makeError<<<10, 1>>>(l_f.d_preact, l_f.output, train_set[i].label, 10);
-      event_list.push_back(q.submit([&] (sycl::handler &cgh) {
+      event_list.push_back(q.submit(0, freqMan.getAndSetFreq("err"), [&] (sycl::handler &cgh) {
         auto dp = l_f.d_preact;
         auto o = l_f.output;
         auto train_set_label = train_set[i].label;
@@ -435,7 +435,7 @@ static void test(
 
   }).wait();
 
-  for (unsigned int i = 0; i < test_cnt; i += 100) { // changed from 1 to 1000 to reduce the number of iterations
+  for (unsigned int i = 0; i < test_cnt; i += 1000) { // changed from 1 to 1000 to reduce the number of iterations
     if (classify(q, l_input, l_c1, l_s1, l_f, test_set[i].data)
         != test_set[i].label) {
       ++error;
