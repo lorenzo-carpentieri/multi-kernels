@@ -41,9 +41,12 @@ def plot_energy(df_app: pd.DataFrame, df_phase: pd.DataFrame, df_kernel: pd.Data
         merged_bars.append(bar1)
         merged_bars.append(bar2)
     
-    # for i, bar in enumerate(merged_bars):
-    #     text = "Per-Phase" if i % 2 == 0 else "Per-Kernel"
-    #     plt.text(bar.get_x() + bar.get_width()/2, energy_y_lims[0], text, ha='center', va='top', fontsize=8, rotation=rotation)
+    for bar in merged_bars:
+        yval = bar.get_height()
+        if yval > energy_y_lims[1]:
+            plt.text(bar.get_x() + bar.get_width()/2, energy_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
+        if bar.get_height() < energy_y_lims[0]:
+            plt.text(bar.get_x() + bar.get_width()/2, energy_y_lims[0], round(yval, 2), ha='center', va='bottom', fontsize=8)
 
     for tick in plt.gca().xaxis.get_major_ticks():
         tick.set_pad(padding)
@@ -70,9 +73,11 @@ def plot_time(df_app: pd.DataFrame, df_phase: pd.DataFrame, df_kernel: pd.DataFr
 
     for bar in merged_bars:
         yval = bar.get_height()
-        # if yval > time_y_lims[1]:
-        #     plt.text(bar.get_x() + bar.get_width()/2, time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
-        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() if bar.get_height() < time_y_lims[1] else time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
+        if yval > time_y_lims[1]:
+            plt.text(bar.get_x() + bar.get_width()/2, time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
+        if bar.get_height() < time_y_lims[0]:
+            plt.text(bar.get_x() + bar.get_width()/2, time_y_lims[0], round(yval, 2), ha='center', va='bottom', fontsize=8)
+        # plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() if bar.get_height() < time_y_lims[1] else time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
 
             
     # for i, bar in enumerate(merged_bars):
