@@ -47,6 +47,8 @@ function set_gpu_frequency() {
     rocm-smi --setsclk ${idx} > /dev/null
   elif [ "$arch" = "cuda" ]; then
     nvidia-smi -lgc $frequency > /dev/null
+  elif [ "$arch" = "lz" ]; then
+    intel_gpu_frequency -s $frequency
   fi
 }
 
@@ -56,6 +58,8 @@ function reset_gpu_frequency() {
     rocm-smi -r > /dev/null
   elif [ "$arch" = "cuda" ]; then
     nvidia-smi -rgc > /dev/null
+  elif [ "$arch" = "lz" ]; then
+    intel_gpu_frequency -d
   fi
 }
 
@@ -65,6 +69,8 @@ function get_core_frequencies {
     core_frequencies=$(nvidia-smi -i 0 --query-supported-clocks=gr --format=csv,noheader,nounits)
   elif [ "$arch" = "rocm" ]; then
     core_frequencies="300 495 731 962 1029 1087 1147 1189 1235 1283 1319 1363 1404 1430 1472 1502" # TODO: make it dynamic
+  elif [ "$arch" = "lz" ]; then
+    core_frequencies="200 250 300 350 400 450 500 550 600 650 700 750 800 850 900 950 1000 1050 1100 1150 1200 1250 1300 1350 1400 1450 1500 1550"
   fi
 }
 
