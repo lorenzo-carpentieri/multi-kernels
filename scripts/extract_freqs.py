@@ -29,7 +29,7 @@ for bench_folder in os.listdir(logs_path):
     print("\n")
     print(f'----------{bench_folder}----------')
     print("\n")
-    kernels_freq_info_df = pd.DataFrame(columns=['kernel_name', 'min_energy_freq', 'max_perf_freq'])
+    kernels_freq_info_df = pd.DataFrame(columns=['kernel_name', 'min_energy_freq', 'max_perf_freq', 'min_edp_freq'])
 
     bench_path = Path(f'{logs_path}/{bench_folder}').resolve()
     df = pd.DataFrame()
@@ -54,14 +54,17 @@ for bench_folder in os.listdir(logs_path):
         df_kernel = grouped_df.get_group(group_name)
         min_energy_index = df_kernel['kernel_energy[j]'].idxmin()
         max_perf_index = df_kernel['times[ms]'].idxmin()
+        min_edp_index = (df_kernel.loc[df['kernel_energy[j]'] > 0]['kernel_energy[j]'] * df_kernel['times[ms]']).idxmin()
 
         core_freq_min_energy = df.loc[min_energy_index, 'core_freq [MHz]']
         core_freq_max_perf = df.loc[max_perf_index, 'core_freq [MHz]']
+        core_freq_min_edp = df.loc[min_edp_index, 'core_freq [MHz]']
         
         data = {
             'kernel_name': [group_name],
             'min_energy_freq': [core_freq_min_energy],
-            'max_perf_freq': [core_freq_max_perf]
+            'max_perf_freq': [core_freq_max_perf],
+            'min_edp_freq': [core_freq_min_edp]
         }
         tmp_kernel_row_info_freq_df = pd.DataFrame(data)
         # kernels_freq_info_df = pd.concat([kernels_freq_info_df, tmp_kernel_row_info_freq_df], ignore_index=True)
