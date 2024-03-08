@@ -9,6 +9,7 @@ from enum import Enum
 from typing import List
 from io import StringIO
 
+VERBOSE=False
 ARCH = None
 RUNS = 1
 
@@ -45,6 +46,8 @@ def get_default_freq() -> int:
   elif ARCH == "amd":
     raise NotImplementedError("AMD frequency not implemented")
   elif ARCH == "nvidia":
+    #TODO: check if this is the correct way to get the default frequency
+    return 1245
     out = subprocess.run(["nvidia-smi", "--query-gpu=clocks.gr", "--format=csv,noheader"], capture_output=True, text=True).stdout
     return int(out.split()[0])
   else:
@@ -81,8 +84,7 @@ class Target(Enum):
    
    
 class Result:
-  def __parse_output(self, output: str) -> float:
-    df = pd.read_csv(StringIO(output))
+  def __parse_output(self, df: pd.DataFrame) -> float:
     self.kernels = {}
     self.time = df['total_real_time[ms]'].mean()
     self.energy = df["total_device_energy[j]"].mean()
@@ -141,8 +143,16 @@ class Runner:
       return self.freq_results[freq]
     if freq:
       set_frequency(freq)
+    
     proc = subprocess.run([self.exec, *self.args], capture_output=True, text=True)
-    res = Result(proc.stdout)
+    dfs = [pd.read_csv(StringIO(proc.stdout))]
+    for _ in range(RUNS - 1):
+      proc = subprocess.run([self.exec, *self.args], capture_output=True, text=True)
+      dfs.append(pd.read_csv(StringIO(proc.stdout)))
+    
+    avg_df = pd.concat(dfs).groupby('kernel_name').mean()
+    
+    res = Result(avg_df)
     self.freq_results[freq] = res
     return res
   
@@ -172,7 +182,8 @@ def find_freq(target: str, kernel: str, frequencies: List[int], runner: Runner) 
   m_res = runner.run(m_freq)
   r_res = runner.run(r_freq)
   
-  print(f"{kernel}:  l={l_res.kernels[kernel].energy} ({l_freq}MHz) | m={m_res.kernels[kernel].energy} ({m_freq}MHz) | r={r_res.kernels[kernel].energy} ({r_freq}MHz)")
+  if VERBOSE:
+    print(f"{kernel}:  l={l_res.kernels[kernel].energy} ({l_freq}MHz) | m={m_res.kernels[kernel].energy} ({m_freq}MHz) | r={r_res.kernels[kernel].energy} ({r_freq}MHz)")
   
   if l_res.lt(m_res, target, kernel) and l_res.lt(r_res, target, kernel):
     print("left-> ", end="")
@@ -198,6 +209,7 @@ if __name__ == '__main__':
     # add enum parameter
     parser.add_argument("--target", choices=["ME", "MP", "MEDP"], default="ME", help="The target to search for")
     parser.add_argument("--runs", type=int, default=1, help="The number of runs to average")
+    parser.add_argument("--verbose", action="store_true", help="Print verbose output")
     parser.add_argument("arch", choices=["intel", "amd", "nvidia"], help="The architecture of the device")
     parser.add_argument("exec", help="The executable to run")
     parser.add_argument("args", nargs=argparse.REMAINDER, help="The arguments to pass to the executable")
@@ -206,6 +218,7 @@ if __name__ == '__main__':
     
     RUNS = args.runs
     ARCH = args.arch
+    VERBOSE = args.verbose
     
     args.target = Target.from_str(args.target)
     args.exec = os.path.abspath(args.exec)
@@ -215,6 +228,9 @@ if __name__ == '__main__':
     
     runner = Runner(args.exec, args.args)
     most_relevant_kernels = get_most_relevant_kernels(get_default_freq(), runner)
+    
+    if VERBOSE:
+      print("Most relevant kernels: ", *most_relevant_kernels)
 
     frequencies = get_frequencies()
     for kernel in most_relevant_kernels:
