@@ -223,7 +223,6 @@ def find_freq(target: str, kernel: str, frequencies: List[int], runner: Runner) 
     
   l, r = int(l), int(r)
   
-  print(f"l: {l} | r: {r}")
   return find_freq(target, kernel, frequencies[l:r], runner)
 
 if __name__ == '__main__':
