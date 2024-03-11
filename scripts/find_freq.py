@@ -12,13 +12,25 @@ from io import StringIO
 VERBOSE=False
 ARCH = None
 RUNS = 1
-
+FREQUENCIES=[]
 
 def get_frequencies() -> List[int]:
   if ARCH == "intel":
     raise NotImplementedError("Intel frequency not implemented")
   elif ARCH == "amd":
-    raise NotImplementedError("AMD frequency not implemented")
+    text = subprocess.run(["rocm-smi", "-s"], capture_output=True, text=True).stdout
+    text = re.sub(r"GPU\[\d+\]\s+:\s?", "", text)
+  
+    pattern = r'Supported\s+sclk\s+frequencies\s+on\s+GPU0\s+([\s\S]*?)(?=\n\n|$)'
+    section_match = re.search(pattern, text)
+
+    frequencies = []
+    if section_match:
+        frequencies_section = section_match.group(1)
+        frequencies = re.findall(r'(\d+:\s+\d+Mhz)', frequencies_section)
+
+    return list(map(lambda x: int(x.split(":")[1].replace("Mhz", "").strip()), frequencies))
+  
   elif ARCH == "nvidia":
     out = subprocess.run(["nvidia-smi", "--query-supported-clocks=gr", "--format=csv,noheader"], capture_output=True, text=True).stdout.split()
     out = list(map(lambda x: x.replace("MHz", "").replace(" ", ""), out))
@@ -32,7 +44,10 @@ def set_frequency(freq: int):
   if ARCH == "intel":
     raise NotImplementedError("Intel frequency not implemented")
   elif ARCH == "amd":
-    raise NotImplementedError("AMD frequency not implemented")
+    freq = FREQUENCIES.index(freq)
+    proc = subprocess.run(["rocm-smi", "--setsclk", f"{freq}"], capture_output=True, text=True)
+    if proc.returncode != 0:
+      raise RuntimeError(f"Failed to set frequency to {freq}")
   elif ARCH == "nvidia":
     proc = subprocess.run(["nvidia-smi", "-lgc", f"{freq}"], capture_output=True, text=True)
     if proc.returncode != 0:
@@ -44,7 +59,16 @@ def get_default_freq() -> int:
   if ARCH == "intel":
     raise NotImplementedError("Intel frequency not implemented")
   elif ARCH == "amd":
-    raise NotImplementedError("AMD frequency not implemented")
+    text = subprocess.run(["rocm-smi", "-g"], capture_output=True, text=True).stdout
+    text = re.sub(r"GPU\[\d+\]\s+:\s?", "", text)
+
+    pattern = r'.*\((\d+Mhz)\).*'
+    match = re.search(pattern, text)
+    if match:
+      return int(match.group(1).replace("Mhz", ""))
+    else:
+      raise ValueError(f"Failed to get default frequency")
+
   elif ARCH == "nvidia":
     #TODO: check if this is the correct way to get the default frequency
     return 1245
@@ -57,7 +81,9 @@ def reset_frequency():
   if ARCH == "intel":
     raise NotImplementedError("Intel frequency not implemented")
   elif ARCH == "amd":
-    raise NotImplementedError("AMD frequency not implemented")
+    proc = subprocess.run(["rocm-smi", "-r"], capture_output=True, text=True)
+    if proc.returncode != 0:
+      raise RuntimeError(f"Failed to set frequency to {freq}")
   elif ARCH == "nvidia":
     subprocess.run(["nvidia-smi", "-rgc"])
   else:
@@ -186,15 +212,12 @@ def find_freq(target: str, kernel: str, frequencies: List[int], runner: Runner) 
     print(f"{kernel}:  l={l_res.kernels[kernel].energy} ({l_freq}MHz) | m={m_res.kernels[kernel].energy} ({m_freq}MHz) | r={r_res.kernels[kernel].energy} ({r_freq}MHz)")
   
   if l_res.lt(m_res, target, kernel) and l_res.lt(r_res, target, kernel):
-    print("left-> ", end="")
     l = 0
     r = len(frequencies) // 2
   elif m_res.lt(l_res, target, kernel) and m_res.lt(r_res, target, kernel):
-    print("mid-> ", end="")
     l = len(frequencies) // 2 - len(frequencies) / 4
     r = len(frequencies) // 2 + len(frequencies) / 4
   else:
-    print("right-> ", end="")
     l = len(frequencies) // 2
     r = len(frequencies)
     
@@ -219,6 +242,7 @@ if __name__ == '__main__':
     RUNS = args.runs
     ARCH = args.arch
     VERBOSE = args.verbose
+    FREQUENCIES = get_frequencies()
     
     args.target = Target.from_str(args.target)
     args.exec = os.path.abspath(args.exec)
@@ -227,14 +251,14 @@ if __name__ == '__main__':
       sys.exit(1)
     
     runner = Runner(args.exec, args.args)
+    
     most_relevant_kernels = get_most_relevant_kernels(get_default_freq(), runner)
     
     if VERBOSE:
       print("Most relevant kernels: ", *most_relevant_kernels)
 
-    frequencies = get_frequencies()
     for kernel in most_relevant_kernels:
-      freq = find_freq(args.target, kernel, frequencies, runner)
+      freq = find_freq(args.target, kernel, FREQUENCIES, runner)
       print(f"Best frequency for optimizing {kernel} on target {args.target}: {freq}")
       print(f"\t- Energy: {runner.run(freq).kernels[kernel].energy}")
       print(f"\t- Time: {runner.run(freq).kernels[kernel].time}")
