@@ -177,7 +177,7 @@ class Printer:
     self.kernels[kernel].time = time
     self.kernels[kernel].medp = medp
   
-  def print_plain(self):
+  def __print_plain(self):
     for k, v in self.kernels.items():
       print(f"{k}: {v.percentage:.2f}% {'*' if v.relevant else ''}")
       print(f"\t- Best frequency: {v.best_freq}")
@@ -185,16 +185,16 @@ class Printer:
       print(f"\t- Time: {v.time}")
       print(f"\t- MEDP: {v.medp}")
   
-  def print_csv(self):
+  def __print_csv(self):
     print("kernel,percentage,relevant,best_freq,energy,time,medp")
     for k, v in self.kernels.items():
       print(f"{k},{v.percentage},{v.relevant},{v.best_freq},{v.energy},{v.time},{v.medp}")
   
   def print(self):
     if self.format == "plain":
-      self.print_plain()
+      self.__print_plain()
     elif self.format == "csv":
-      self.print_csv()
+      self.__print_csv()
     else:
       raise ValueError(f"Invalid format {self.format}")
   
