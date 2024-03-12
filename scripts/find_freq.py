@@ -183,10 +183,10 @@ class Printer:
       print(f"\t- Best frequency: {v.best_freq} MHz")
       print(f"\t- Energy: {v.energy} J")
       print(f"\t- Time: {v.time} ms")
-      print(f"\t- MEDP: {v.medp} Jms")
+      print(f"\t- EDP: {v.medp} Jms")
   
   def __print_csv(self):
-    print("kernel,percentage,relevant,best_freq[MHz],energy[J],time[ms],medp[Jms]")
+    print("kernel,percentage,relevant,best_freq[MHz],energy[J],time[ms],edp[Jms]")
     for k, v in self.kernels.items():
       print(f"{k},{v.percentage},{v.relevant},{v.best_freq},{v.energy},{v.time},{v.medp}")
   
