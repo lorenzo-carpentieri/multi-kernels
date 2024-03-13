@@ -3,7 +3,7 @@
 
 #include <sycl/sycl.hpp>
 
-using namespace cl::sycl;
+using namespace sycl;
 constexpr access::mode sycl_read       = access::mode::read;
 constexpr access::mode sycl_write      = access::mode::write;
 constexpr access::mode sycl_read_write = access::mode::read_write;

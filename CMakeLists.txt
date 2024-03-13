@@ -63,6 +63,7 @@ set(benchmarks
     srad-sycl/srad_main.cpp
     mnist-sycl/mnist_main.cpp
     metropolis-sycl/metropolis_main.cpp
+    lulesh-sycl/lulesh_main.cc
 )
 
 # Copy file
@@ -100,7 +101,11 @@ add_custom_target(copy_scripts ALL
 foreach(benchmark IN LISTS benchmarks)
     get_filename_component(target ${benchmark} NAME_WE)
 
-    add_executable(${target} ${benchmark})
+    if (${target} STREQUAL "lulesh_main")
+        add_executable(${target} ${benchmark} lulesh-sycl/lulesh-comm.cc lulesh-sycl/lulesh-init.cc lulesh-sycl/lulesh-util.cc lulesh-sycl/lulesh-viz.cc)
+    else()
+        add_executable(${target} ${benchmark})
+    endif()
 
     if(ENABLED_SYNERGY)
         target_compile_definitions(${target} PUBLIC __ENABLED_SYNERGY)
