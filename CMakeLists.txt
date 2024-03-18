@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(multi-kernels)
 
+
+find_package(MPI REQUIRED)
 # set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -25,6 +27,10 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 option(ENABLED_SYNERGY "Enable SYnergy support" OFF)
 option(ENABLED_TIME_EVENT_PROFILING "Enable time profiling with sycl event" OFF)
+option(WITH_MPI_ASYNCH "Enable MPI_Ixx call" OFF)
+option(ENABLE_FREQ_CHANGE_MPI_HIDING "Enable frequency change MPI hiding" OFF)
+option(WITH_PROCESS_FREQ_CHANGE "Enable freq. change with another MPI process" OFF)
+
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsycl")
 
@@ -64,6 +70,7 @@ set(benchmarks
     mnist-sycl/mnist_main.cpp
     metropolis-sycl/metropolis_main.cpp
     lulesh-sycl/lulesh_main.cc
+    mpi-freq-change/mpi_app.cpp
 )
 
 # Copy file
@@ -119,8 +126,25 @@ foreach(benchmark IN LISTS benchmarks)
     if(ENABLED_TIME_EVENT_PROFILING)
         target_compile_definitions(${target} PUBLIC SYCL_BENCH_ENABLE_QUEUE_PROFILING=1)
     endif()
+    if(WITH_MPI_ASYNCH)
+        target_compile_definitions(${target} PUBLIC WITH_MPI_ASYNCH=1)
+    endif()
+
+    if(ENABLE_FREQ_CHANGE_MPI_HIDING)
+        target_compile_definitions(${target} PUBLIC HIDING=1)
+    else()
+        target_compile_definitions(${target} PUBLIC HIDING=0)
+    endif()
+   
+    if(WITH_PROCESS_FREQ_CHANGE)
+        target_compile_definitions(${target} PUBLIC WITH_PROCESS_FREQ_CHANGE=1)
+    else()
+        target_compile_definitions(${target} PUBLIC WITH_PROCESS_FREQ_CHANGE=0)
+    endif()
 
     target_compile_definitions(${target} PRIVATE __DPCPP__)
+    # Link MPI libraries
+    target_link_libraries(${target} PUBLIC ${MPI_CXX_LIBRARIES})
 
     install(TARGETS ${target} RUNTIME DESTINATION bin/benchmarks/)
     get_filename_component(dir ${benchmark} DIRECTORY)
