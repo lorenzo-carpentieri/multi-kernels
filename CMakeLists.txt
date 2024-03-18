@@ -70,7 +70,7 @@ set(benchmarks
     mnist-sycl/mnist_main.cpp
     metropolis-sycl/metropolis_main.cpp
     lulesh-sycl/lulesh_main.cc
-    mpi-freq-change/mpi_app.cpp
+    mpi-freq-change/mpi_app_geom_knn.cpp
 )
 
 # Copy file
