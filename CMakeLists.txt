@@ -71,6 +71,8 @@ set(benchmarks
     metropolis-sycl/metropolis_main.cpp
     lulesh-sycl/lulesh_main.cc
     mpi-freq-change/mpi_app_geom_knn.cpp
+    mpi-freq-change/freq_change_overhead.cpp
+
 )
 
 # Copy file
