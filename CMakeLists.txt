@@ -132,6 +132,8 @@ foreach(benchmark IN LISTS benchmarks)
     endif()
     if(WITH_MPI_ASYNCH)
         target_compile_definitions(${target} PUBLIC WITH_MPI_ASYNCH=1)
+    else()
+        target_compile_definitions(${target} PUBLIC WITH_MPI_ASYNCH=0)
     endif()
 
     if(ENABLE_FREQ_CHANGE_MPI_HIDING)

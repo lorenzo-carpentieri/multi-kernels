@@ -365,7 +365,7 @@ int main(int argc, char *argv[])
     if (rank==0){
         auto end = std::chrono::high_resolution_clock::now();   
         auto elapsed_time_app = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        std::cout<< "Total time [ms] " << elapsed_time_app.count() <<std::endl;
+        std::cout<< "Total time [ms]: " << elapsed_time_app.count() <<std::endl;
     }
     // auto total_time_per_process = elapsed_time_app.count();
     // int64_t total_time = 0;
