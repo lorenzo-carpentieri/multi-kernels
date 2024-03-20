@@ -5,7 +5,7 @@
 # eseguire 30 volte
 
 # num of runs
-NUM_RUNS=10
+NUM_RUNS=100
 # create the path to build directory
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 BUILD_DIR=$SCRIPT_DIR/build
@@ -43,31 +43,31 @@ do
     mpirun -n 4 ./mpi_app_geom_vec_add >> ../logs/mpi_app_geom_vec_add_asynch_no_hiding.log
 done
 
-# synch + hiding
+# # synch + hiding
 
-rm -rf $BUILD_DIR/*
-cd $BUILD_DIR
-../script_mpi_freq/compile_synch_hiding.sh 
-make -j 
+# rm -rf $BUILD_DIR/*
+# cd $BUILD_DIR
+# ../script_mpi_freq/compile_synch_hiding.sh 
+# make -j 
 
 
-for ((i=0; i<$NUM_RUNS;i++));
-do
-    echo Run $i 
-    mpirun -n 4 ./mpi_app_geom_vec_add >> ../logs/mpi_app_geom_vec_add_synch_hiding.log
-done
+# for ((i=0; i<$NUM_RUNS;i++));
+# do
+#     echo Run $i 
+#     mpirun -n 4 ./mpi_app_geom_vec_add >> ../logs/mpi_app_geom_vec_add_synch_hiding.log
+# done
 
-# synch + no_hiding
+# # synch + no_hiding
 
-rm -rf $BUILD_DIR/*
-../script_mpi_freq/compile_synch_no_hiding.sh
-make -j 
+# rm -rf $BUILD_DIR/*
+# ../script_mpi_freq/compile_synch_no_hiding.sh
+# make -j 
 
-for ((i=0; i<$NUM_RUNS;i++));
-do
-    echo Run $i 
-    mpirun -n 4 ./mpi_app_geom_vec_add >> ../logs/mpi_app_geom_vec_add_synch_no_hiding.log
-done
+# for ((i=0; i<$NUM_RUNS;i++));
+# do
+#     echo Run $i 
+#     mpirun -n 4 ./mpi_app_geom_vec_add >> ../logs/mpi_app_geom_vec_add_synch_no_hiding.log
+# done
 
 
 
