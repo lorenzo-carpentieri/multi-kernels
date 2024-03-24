@@ -12,7 +12,7 @@ sns.set_theme()
 
 bar_width = 0.4
 padding = 0
-time_y_lims = (0.5, 4)
+time_y_lims = (0.5, 3.5)
 energy_y_lims = (0, 1.5)
 legend_fontsize = 9
 rotation=20
@@ -74,11 +74,11 @@ def plot_time(df_app: pd.DataFrame, df_phase: pd.DataFrame, df_kernel: pd.DataFr
 
     for bar in merged_bars:
         yval = bar.get_height()
-        if yval >= 1:
+        if yval >= 0:
             plt.text(bar.get_x() + bar.get_width()/2, yval if yval < time_y_lims[1] else time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
         # if yval > time_y_lims[1]:
         #     plt.text(bar.get_x() + bar.get_width()/2, time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
-        if bar.get_height() < time_y_lims[0]:
+        if yval < time_y_lims[0]:
             plt.text(bar.get_x() + bar.get_width()/2, time_y_lims[0], round(yval, 2), ha='center', va='bottom', fontsize=8)
         # plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() if bar.get_height() < time_y_lims[1] else time_y_lims[1], round(yval, 2), ha='center', va='bottom', fontsize=8)
 
