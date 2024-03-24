@@ -4,7 +4,7 @@ ARCHS=("cuda" "rocm" "lz" "geopm")
 arch=""
 benches=("ace" "aop" "bh" "metropolis" "mnist" "srad")
 curr_benches="ace,aop,bh,metropolis,mnist,srad"
-sampling=3
+sampling=5
 log_dir=""
 
 # define help function
@@ -179,7 +179,7 @@ for core_freq in "${sampled_freq[@]}"; do
     mkdir -p $LOG_DIR/aop/
     echo "[*] Running AOP"
     timesteps=50 # 100
-    num_paths=24576 # 32
+    num_paths=128 # 32
     num_runs=1 # 1
     T=1.0 # 1.0
     K=4.0 # 4.0

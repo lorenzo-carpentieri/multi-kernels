@@ -85,7 +85,7 @@ for it in $(seq 1 $num_runs); do
   if [[ $curr_benches == *"aop"* ]]; then
   echo "[*] Running AOP"
   timesteps=50 # 100
-  num_paths=6144 # 32
+  num_paths=128 # 32
   num_runs=1 # 1
   T=1.0 # 1.0
   K=4.0 # 4.0
@@ -101,7 +101,7 @@ for it in $(seq 1 $num_runs); do
   # Metropolis
   if [[ $curr_benches == *"metropolis"* ]]; then
   echo "[*] Running Metropolis"
-  L=960 # 32
+  L=1024 # 32
   R=1 # 1
   atrials=1 # 1
   ains=1 # 1
