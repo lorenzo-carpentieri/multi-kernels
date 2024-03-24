@@ -231,6 +231,7 @@ int main(int argc, char* argv []) {
   event_list.push_back(e);
   kernel_names.push_back("extract");
   start_times.push_back(std::chrono::high_resolution_clock::now());
+  auto start_time = synergy::wall_clock_t::now();
   e.wait();
 
   time7 = get_time();
@@ -393,6 +394,7 @@ int main(int argc, char* argv []) {
   sycl::free(d_sums2, q);
 
   time12 = get_time();
+  auto end_time = synergy::wall_clock_t::now();
 
   //  DISPLAY TIMING
 
@@ -424,10 +426,21 @@ int main(int argc, char* argv []) {
   fprintf(stderr, "Total time:\n");
   fprintf(stderr, "%.12f s\n", (float) (time12-time0) / 1000000);
 
+
+#ifdef SYNERGY_KERNEL_PROFILING
+  auto host_energy = q.host_energy_consumption();
   synergy::Profiler<double> synergy_profiler {q, event_list, start_times[0]};
-  std::cout << "kernel_name,memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
+  std::cout << "kernel_name,host_energy[j],memory_freq [MHz],core_freq [MHz],times[ms],kernel_energy[j],total_real_time[ms],sum_kernel_times[ms],total_device_energy[j],sum_kernel_energy[j]" << std::endl;
   for (int i = 0; i < event_list.size(); i++) {
-    std::cout << kernel_names[i] << ",";
+    std::cout << kernel_names[i] << "," << host_energy << ",";
     synergy_profiler.print_all_profiling_info(i);
   }
+#else
+  auto host_energy = q.host_energy_consumption();
+  auto device_energy = q.device_energy_consumption();
+  auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+  std::cout << "Total time [ms]: " << time << std::endl;
+  std::cout << "Host energy [J]: " << host_energy << std::endl;
+  std::cout << "Device energy [J]: " << device_energy << std::endl;
+#endif
 }
