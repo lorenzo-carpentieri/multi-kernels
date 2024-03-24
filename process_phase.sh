@@ -34,5 +34,5 @@ if [ $parse_data = true ] ; then
     echo "[*] Parsing data..."
     python3 $SCRIPT_DIR/scripts/parse_phase_logs.py $SCRIPT_DIR/logs/phase/native $SCRIPT_DIR/parsed/phase/phase_results.csv
 fi
-python3 $SCRIPT_DIR/scripts/plot_phase_results.py kernels $SCRIPT_DIR/parsed/phase/phase_results.csv $SCRIPT_DIR/plot
-python3 $SCRIPT_DIR/scripts/plot_phase_results.py total $SCRIPT_DIR/parsed/phase/phase_results.csv $SCRIPT_DIR/plot
+python3 $SCRIPT_DIR/scripts/plot_phase_results.py $SCRIPT_DIR/parsed/phase/phase_results.csv $SCRIPT_DIR/plot
+# python3 $SCRIPT_DIR/scripts/host_energy_results.py $SCRIPT_DIR/parsed/phase/phase_results.csv $SCRIPT_DIR/plot

@@ -2,7 +2,11 @@ import pandas as pd
 import glob
 import math
 import numpy as np
-import sys, os
+import sys, os, re
+
+time_pattern = re.compile(r"Total time \[ms\]: (\d+\.?\d*[eE]?[+-]?\d*)")
+host_energy_pattern = re.compile(r"Host energy \[J\]: (\d+\.?\d*[eE]?[+-]?\d*)")
+device_energy_pattern = re.compile(r"Device energy \[J\]: (\d+\.?\d*[eE]?[+-]?\d*)")
 
 func_dict = {
   "Average": np.mean,
@@ -11,11 +15,11 @@ func_dict = {
   "Max": np.amax,
   "Median": np.median,
 }
+
 metrics = [k for k in func_dict.keys()]
-values = ['total_real_time[ms]',
-          'sum_kernel_times[ms]',
-          'total_device_energy[j]',
-          'sum_kernel_energy[j]',
+values = ['time[ms]',
+          'device_energy[j]',
+          'host_energy[j]',
           ]
 
 #combine each metric with each value to create columns
@@ -25,10 +29,19 @@ def parse_single_app(dir_path: str):
   df = pd.DataFrame(columns=(['approach'] + values))
   name = dir_path.split('/')[-1]
   for approach in ["app", "phase", "kernel"]:
-    for file in glob.glob(f"{dir_path}/{name}_{approach}*.csv"):
-      tmp = pd.read_csv(file)
-      df.loc[len(df.index)] = [approach] + [tmp[value].mean() for value in values]
-    
+    file = f"{dir_path}/{name}_{approach}.dat"
+    with open(file) as f:
+      data = f.read()
+    time = list(map(float, time_pattern.findall(data)))
+    host_energy = list(map(float, host_energy_pattern.findall(data)))
+    device_energy = list(map(float, device_energy_pattern.findall(data)))
+    tmp = {
+      'approach': [approach] * len(time),
+      'time[ms]': time,
+      'device_energy[j]': host_energy,
+      'host_energy[j]': device_energy,
+    }
+    df = pd.concat([df, pd.DataFrame(tmp)], ignore_index=True)
   return df
 
 def parse_phase_logs(dir_path: str) -> pd.DataFrame:
@@ -46,7 +59,7 @@ def parse_phase_logs(dir_path: str) -> pd.DataFrame:
 
 if __name__ == '__main__':
   if len(sys.argv) != 3:
-    print(f"Usage: {sys.argv[0]} <log_dir> <out_dir>")
+    print(f"Usage: {sys.argv[0]} <log_dir>  <out_file>")
     exit(1)
   
   log_dir = sys.argv[1]

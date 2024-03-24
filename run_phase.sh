@@ -68,23 +68,24 @@ CONF_DIR=$SCRIPT_DIR/config
 
 cd $EXEC_DIR
 
+for bench in $(echo $curr_benches | tr "," "\n"); do
+  mkdir -p $LOG_DIR/$bench
+  rm -f $LOG_DIR/$bench/*.dat
+done
 for it in $(seq 1 $num_runs); do
   # ACE
   if [[ $curr_benches == *"ace"* ]]; then
-  mkdir -p $LOG_DIR/ace/
   echo "[*] Running ACE"
   num_runs=1
-  cat $CONF_DIR/app/ace.conf | ./ace_main $num_runs > $LOG_DIR/ace/ace_app$it.csv 2> $LOG_DIR/ace/ace_app$it.log
-  cat $CONF_DIR/phase/ace.conf | ./ace_main $num_runs > $LOG_DIR/ace/ace_phase$it.csv 2> $LOG_DIR/ace/ace_phase$it.log
-  cat $CONF_DIR/kernel/ace.conf | ./ace_main $num_runs > $LOG_DIR/ace/ace_kernel$it.csv 2> $LOG_DIR/ace/ace_kernel$it.log
+  cat $CONF_DIR/app/ace.conf | (./ace_main $num_runs >> $LOG_DIR/ace/ace_app.dat 2> $LOG_DIR/ace/ace_app$it.log)
+  cat $CONF_DIR/phase/ace.conf | (./ace_main $num_runs >> $LOG_DIR/ace/ace_phase.dat 2> $LOG_DIR/ace/ace_phase$it.log)
+  cat $CONF_DIR/kernel/ace.conf | (./ace_main $num_runs >> $LOG_DIR/ace/ace_kernel.dat 2> $LOG_DIR/ace/ace_kernel$it.log)
   fi
 
-  # AOP TODO: fix energy consumption
   if [[ $curr_benches == *"aop"* ]]; then
-  mkdir -p $LOG_DIR/aop/
   echo "[*] Running AOP"
   timesteps=50 # 100
-  num_paths=24576 # 32
+  num_paths=6144 # 32
   num_runs=1 # 1
   T=1.0 # 1.0
   K=4.0 # 4.0
@@ -92,16 +93,15 @@ for it in $(seq 1 $num_runs); do
   r=0.06 # 0.06
   sigma=0.2 # 0.2
   price_put="-call"
-  cat $CONF_DIR/app/aop.conf | ./aop_main -timesteps $timesteps -paths $num_paths -runs $num_runs -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put > $LOG_DIR/aop/aop_app$it.csv 2> $LOG_DIR/aop/aop_app$it.log
-  cat $CONF_DIR/phase/aop.conf | ./aop_main -timesteps $timesteps -paths $num_paths -runs $num_runs -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put > $LOG_DIR/aop/aop_phase$it.csv 2> $LOG_DIR/aop/aop_phase$it.log
-  cat $CONF_DIR/kernel/aop.conf | ./aop_main -timesteps $timesteps -paths $num_paths -runs $num_runs -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put > $LOG_DIR/aop/aop_kernel$it.csv 2> $LOG_DIR/aop/aop_kernel$it.log
+  cat $CONF_DIR/app/aop.conf | ./aop_main -timesteps $timesteps -paths $num_paths -runs $num_runs -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put >> $LOG_DIR/aop/aop_app.dat 2> $LOG_DIR/aop/aop_app$it.log
+  cat $CONF_DIR/phase/aop.conf | ./aop_main -timesteps $timesteps -paths $num_paths -runs $num_runs -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put >> $LOG_DIR/aop/aop_phase.dat 2> $LOG_DIR/aop/aop_phase$it.log
+  cat $CONF_DIR/kernel/aop.conf | ./aop_main -timesteps $timesteps -paths $num_paths -runs $num_runs -T $T -S0 $S0 -K $K -r $r -sigma $sigma $price_put >> $LOG_DIR/aop/aop_kernel.dat 2> $LOG_DIR/aop/aop_kernel$it.log
   fi
 
   # Metropolis
   if [[ $curr_benches == *"metropolis"* ]]; then
-  mkdir -p $LOG_DIR/metropolis/
   echo "[*] Running Metropolis"
-  L=1024 # 32
+  L=960 # 32
   R=1 # 1
   atrials=1 # 1
   ains=1 # 1
@@ -111,32 +111,29 @@ for it in $(seq 1 $num_runs); do
   TR=0.1 # 0.1
   dT=0.1 # 0.1
   h=0.1 # 0.1
-  cat $CONF_DIR/app/metropolis.conf | ./metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed > $LOG_DIR/metropolis/metropolis_app$it.csv 2> $LOG_DIR/metropolis/metropolis_app$it.log
-  cat $CONF_DIR/phase/metropolis.conf | ./metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed > $LOG_DIR/metropolis/metropolis_phase$it.csv 2> $LOG_DIR/metropolis/metropolis_phase$it.log
-  cat $CONF_DIR/kernel/metropolis.conf | ./metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed > $LOG_DIR/metropolis/metropolis_kernel$it.csv 2> $LOG_DIR/metropolis/metropolis_kernel$it.log
+  cat $CONF_DIR/app/metropolis.conf | ./metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed >> $LOG_DIR/metropolis/metropolis_app.dat 2> $LOG_DIR/metropolis/metropolis_app$it.log
+  cat $CONF_DIR/phase/metropolis.conf | ./metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed >> $LOG_DIR/metropolis/metropolis_phase.dat 2> $LOG_DIR/metropolis/metropolis_phase$it.log
+  cat $CONF_DIR/kernel/metropolis.conf | ./metropolis_main -l $L $R -t $TR $dT -h $h -a $atrials $ains $apts $ams -z $seed >> $LOG_DIR/metropolis/metropolis_kernel.dat 2> $LOG_DIR/metropolis/metropolis_kernel$it.log
   fi
 
-  # Mnist TODO: fix energy consumption
   if [[ $curr_benches == *"mnist"* ]]; then
-  mkdir -p $LOG_DIR/mnist
   echo "[*] Running MNIST"
   num_iters=1 # 1 
-  cat $CONF_DIR/app/mnist.conf | ./mnist_main $num_iters > $LOG_DIR/mnist/mnist_app$it.csv 2> $LOG_DIR/mnist/mnist_app$it.log
-  cat $CONF_DIR/phase/mnist.conf | ./mnist_main $num_iters > $LOG_DIR/mnist/mnist_phase$it.csv 2> $LOG_DIR/mnist/mnist_phase$it.log
-  cat $CONF_DIR/kernel/mnist.conf | ./mnist_main $num_iters > $LOG_DIR/mnist/mnist_kernel$it.csv 2> $LOG_DIR/mnist/mnist_kernel$it.log
+  cat $CONF_DIR/app/mnist.conf | ./mnist_main $num_iters >> $LOG_DIR/mnist/mnist_app.dat 2> $LOG_DIR/mnist/mnist_app$it.log
+  cat $CONF_DIR/phase/mnist.conf | ./mnist_main $num_iters >> $LOG_DIR/mnist/mnist_phase.dat 2> $LOG_DIR/mnist/mnist_phase$it.log
+  cat $CONF_DIR/kernel/mnist.conf | ./mnist_main $num_iters >> $LOG_DIR/mnist/mnist_kernel.dat 2> $LOG_DIR/mnist/mnist_kernel$it.log
   fi
 
   # Srad
   if [[ $curr_benches == *"srad"* ]]; then
-  mkdir -p $LOG_DIR/srad/
   echo "[*] Running SRAD"
   num_iters=100
   lambda=1
-  number_of_rows=2048 #16384 #512
-  number_of_cols=2048 #16384 #512
-  cat $CONF_DIR/app/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_app$it.csv 2> $LOG_DIR/srad/srad_app$it.log
-  cat $CONF_DIR/phase/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_phase$it.csv 2> $LOG_DIR/srad/srad_phase$it.log
-  cat $CONF_DIR/kernel/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols > $LOG_DIR/srad/srad_kernel$it.csv 2> $LOG_DIR/srad/srad_kernel$it.log
+  number_of_rows=16384 #16384 #512
+  number_of_cols=16384 #16384 #512
+  cat $CONF_DIR/app/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols >> $LOG_DIR/srad/srad_app.dat 2> $LOG_DIR/srad/srad_app$it.log
+  cat $CONF_DIR/phase/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols >> $LOG_DIR/srad/srad_phase.dat 2> $LOG_DIR/srad/srad_phase$it.log
+  cat $CONF_DIR/kernel/srad.conf | ./srad_main $num_iters $lambda $number_of_rows $number_of_cols >> $LOG_DIR/srad/srad_kernel.dat 2> $LOG_DIR/srad/srad_kernel$it.log
   fi
 done
 
