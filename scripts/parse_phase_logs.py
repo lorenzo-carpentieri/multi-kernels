@@ -38,8 +38,8 @@ def parse_single_app(dir_path: str):
     tmp = {
       'approach': [approach] * len(time),
       'time[ms]': time,
-      'device_energy[j]': host_energy,
-      'host_energy[j]': device_energy,
+      'device_energy[j]': device_energy,
+      'host_energy[j]': host_energy,
     }
     df = pd.concat([df, pd.DataFrame(tmp)], ignore_index=True)
   return df
