@@ -1,0 +1,21 @@
+## BUILD
+Create a build directory:
+```
+mkdir build
+cd build
+```
+Run CMake to configure the project:
+<pre>
+cmake -DCMAKE_CXX_COMPILER=icpx \
+-DENABLED_SYNERGY=ON \
+-DSYCL_IMPL=dpcpp \
+-DSYNERGY_GEOPM_SUPPORT=ON \
+-DSYNERGY_DEVICE_PROFILING=ON \
+-DSYNERGY_HOST_PROFILING=ON \
+-DSYNERGY_KERNEL_PROFILING=ON \
+-DSYNERGY_SYCL_IMPL=DPC++ \
+-DSYNERGY_USE_PROFILING_ENERGY=ON \
+-DENABLED_TIME_EVENT_PROFILING=ON \
+.. 
+</pre>
+## RUN
