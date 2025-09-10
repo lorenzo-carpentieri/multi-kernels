@@ -370,7 +370,7 @@ int main(int argc, char *argv[])
 
   auto offload_start = std::chrono::steady_clock::now();
 
-  synergy::queue q(sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}});
+  synergy::queue q(sycl::gpu_selector_v);
 
   // allocate GPU device buffers
   nRarray *d_phiold = (nRarray *)sycl::malloc_device(vol_in_bytes, q);
@@ -480,6 +480,7 @@ int main(int argc, char *argv[])
   auto end = synergy::wall_clock_t::now();
   // q.wait();
   
+auto host_energy = q.host_energy_consumption();
 #ifdef SYNERGY_KERNEL_PROFILING
   synergy::Profiler<double> synergy_profiler(q, events, start);
   t = 0;
@@ -490,7 +491,6 @@ int main(int argc, char *argv[])
       synergy_profiler.print_all_profiling_info(i);
   }
 #else
-  auto host_energy = q.host_energy_consumption();
   auto device_energy = q.device_energy_consumption();
   auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
   std::cout << "Total time [ms]: " << time << std::endl;

@@ -63,12 +63,12 @@ if(DPCPP_WITH_LZ_BACKEND)
 endif()
 
 set(benchmarks
-    ace-sycl/ace_main.cpp
-    aop-sycl/aop_main.cpp
-    bh-sycl/bh_main.cpp
-    srad-sycl/srad_main.cpp
-    mnist-sycl/mnist_main.cpp
-    metropolis-sycl/metropolis_main.cpp
+    app/ace-sycl/ace_main.cpp
+    app/aop-sycl/aop_main.cpp
+    app/bh-sycl/bh_main.cpp
+    app/srad-sycl/srad_main.cpp
+    app/mnist-sycl/mnist_main.cpp
+    app/metropolis-sycl/metropolis_main.cpp
     lulesh-sycl/lulesh_main.cc
     mpi-freq-change/mpi_app_geom_knn.cpp
     mpi-freq-change/mpi_app_geom_vec_add.cpp
@@ -80,28 +80,28 @@ set(benchmarks
 # Copy file
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/input.pgm
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/srad-sycl/input.pgm ${CMAKE_CURRENT_BINARY_DIR}/input.pgm
-  DEPENDS ${CMAKE_SOURCE_DIR}/srad-sycl/input.pgm
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/app/srad-sycl/input.pgm ${CMAKE_CURRENT_BINARY_DIR}/input.pgm
+  DEPENDS ${CMAKE_SOURCE_DIR}/app/srad-sycl/input.pgm
 )
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/train-images.idx3-ubyte
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/mnist-sycl/train-images.idx3-ubyte ${CMAKE_CURRENT_BINARY_DIR}/train-images.idx3-ubyte
-  DEPENDS ${CMAKE_SOURCE_DIR}/mnist-sycl/train-images.idx3-ubyte
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/app/mnist-sycl/train-images.idx3-ubyte ${CMAKE_CURRENT_BINARY_DIR}/train-images.idx3-ubyte
+  DEPENDS ${CMAKE_SOURCE_DIR}/app/mnist-sycl/train-images.idx3-ubyte
 )
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/train-labels.idx1-ubyte
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/mnist-sycl/train-labels.idx1-ubyte ${CMAKE_CURRENT_BINARY_DIR}/train-labels.idx1-ubyte
-  DEPENDS ${CMAKE_SOURCE_DIR}/mnist-sycl/train-labels.idx1-ubyte
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/app/mnist-sycl/train-labels.idx1-ubyte ${CMAKE_CURRENT_BINARY_DIR}/train-labels.idx1-ubyte
+  DEPENDS ${CMAKE_SOURCE_DIR}/app/mnist-sycl/train-labels.idx1-ubyte
 )
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/t10k-images.idx3-ubyte
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/mnist-sycl/t10k-images.idx3-ubyte ${CMAKE_CURRENT_BINARY_DIR}/t10k-images.idx3-ubyte
-  DEPENDS ${CMAKE_SOURCE_DIR}/mnist-sycl/t10k-images.idx3-ubyte
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/app/mnist-sycl/t10k-images.idx3-ubyte ${CMAKE_CURRENT_BINARY_DIR}/t10k-images.idx3-ubyte
+  DEPENDS ${CMAKE_SOURCE_DIR}/app/mnist-sycl/t10k-images.idx3-ubyte
 )
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/t10k-labels.idx1-ubyte
-  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/mnist-sycl/t10k-labels.idx1-ubyte ${CMAKE_CURRENT_BINARY_DIR}/t10k-labels.idx1-ubyte
-  DEPENDS ${CMAKE_SOURCE_DIR}/mnist-sycl/t10k-labels.idx1-ubyte
+  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/app/mnist-sycl/t10k-labels.idx1-ubyte ${CMAKE_CURRENT_BINARY_DIR}/t10k-labels.idx1-ubyte
+  DEPENDS ${CMAKE_SOURCE_DIR}/app/mnist-sycl/t10k-labels.idx1-ubyte
 )
 
 add_custom_target(copy_scripts ALL
@@ -113,7 +113,7 @@ foreach(benchmark IN LISTS benchmarks)
     get_filename_component(target ${benchmark} NAME_WE)
 
     if (${target} STREQUAL "lulesh_main")
-        add_executable(${target} ${benchmark} lulesh-sycl/lulesh-comm.cc lulesh-sycl/lulesh-init.cc lulesh-sycl/lulesh-util.cc lulesh-sycl/lulesh-viz.cc)
+        add_executable(${target} ${benchmark} app/lulesh-sycl/lulesh-comm.cc app/lulesh-sycl/lulesh-init.cc app/lulesh-sycl/lulesh-util.cc app/lulesh-sycl/lulesh-viz.cc)
     else()
         add_executable(${target} ${benchmark})
     endif()

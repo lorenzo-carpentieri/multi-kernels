@@ -27,9 +27,10 @@ template < typename T >
 inline float warp_reduce(T val, sycl::nd_item<3> &item)
 {
   auto sg = item.get_sub_group();
-  for (int offset = WARPSIZE >> 1; offset > 0; offset >>= 1)
-    val += sg.shuffle_down(val, offset);
-  return val;
+  return reduce_over_group(sg, val,  sycl::plus<>());
+  // for (int offset = WARPSIZE >> 1; offset > 0; offset >>= 1)
+  //   val += sg.shuffle_down(val, offset);
+  // return val;
 }
 
 /* block reduction with warp reduction */

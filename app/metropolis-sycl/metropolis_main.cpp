@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
   gpu_pcg32_srandom_r(&hpcgs, &hpcgi, seed, 1);
   seed = gpu_pcg32_random_r(&hpcgs, &hpcgi);
 
-  synergy::queue q{sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order()}};
+  synergy::queue q{sycl::gpu_selector_v};
 // #ifdef USE_GPU
 //   sycl::queue q(sycl::gpu_selector_v, sycl::property::queue::in_order());
 // #else

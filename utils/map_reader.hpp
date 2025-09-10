@@ -11,7 +11,8 @@ public:
   enum class FreqChangePolicy {
     APP,
     PHASE,
-    KERNEL
+    KERNEL,
+    NONE
   };
 
   FreqManager(std::istream& is) { 
@@ -52,6 +53,8 @@ public:
         break;
       case FreqChangePolicy::KERNEL:
         break;
+      case FreqChangePolicy::NONE:
+        kernel_freqs[key] = 0;
     }
     return freq;
   }
@@ -63,7 +66,10 @@ public:
       return FreqChangePolicy::PHASE;
     } else if (s == "KERNEL") {
       return FreqChangePolicy::KERNEL;
-    } else {
+    } else if (s == "NONE") {
+      return FreqChangePolicy::NONE;
+    }
+    else {
       throw std::runtime_error("Unknown FreqChangePolicy");
     }
   }
@@ -101,6 +107,15 @@ private:
     if (ret == -1) {
       throw std::runtime_error("Error in select()");
     }
+    // if (ret > 0) {
+    //   // Input is available, read and print it
+    //   char buffer[1024];
+    //   size_t bytes = read(STDIN_FILENO, buffer, sizeof(buffer) - 1);
+    //   if (bytes > 0) {
+    //     buffer[bytes] = '\0';
+    //     std::cout << "STDIN: " << buffer << std::endl;
+    //   }
+    // }
     return ret > 0;
   }
 

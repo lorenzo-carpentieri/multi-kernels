@@ -20,9 +20,9 @@ FreqManager freqMan {std::cin};
 
 static inline void loaddata()
 {
-  mnist_load("./train-images.idx3-ubyte", "./train-labels.idx1-ubyte",
+  mnist_load("/home/lcarpent/energy-workspace/multi-kernels/build/train-images.idx3-ubyte", "/home/lcarpent/energy-workspace/multi-kernels/build/train-labels.idx1-ubyte",
       &train_set, &train_cnt);
-  mnist_load("./t10k-images.idx3-ubyte", "./t10k-labels.idx1-ubyte",
+  mnist_load("/home/lcarpent/energy-workspace/multi-kernels/build/t10k-images.idx3-ubyte", "/home/lcarpent/energy-workspace/multi-kernels/build/t10k-labels.idx1-ubyte",
       &test_set, &test_cnt);
 }
 
@@ -458,7 +458,7 @@ int main(int argc, const  char **argv)
   srand(123);
   loaddata();
 
-  synergy::queue q(sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling{}, sycl::property::queue::in_order()});
+  synergy::queue q(sycl::gpu_selector_v);
 // #ifdef USE_GPU
 //   sycl::queue q(sycl::gpu_selector_v, sycl::property::queue::in_order());
 // #else

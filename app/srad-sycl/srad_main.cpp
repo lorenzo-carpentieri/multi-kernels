@@ -80,11 +80,12 @@ int main(int argc, char* argv []) {
   FP meanROI2;
   FP varROI;
   FP q0sqr;
+  std::string img_path;
 
   time1 = get_time();
 
-  if(argc != 5){
-    printf("Usage: %s <repeat> <lambda> <number of rows> <number of columns>\n", argv[0]);
+  if(argc != 6){
+    printf("Usage: %s  <repeat> <lambda> <number of rows> <number of columns> <img_path>\n", argv[0]);
     return 1;
   }
   else{
@@ -92,6 +93,8 @@ int main(int argc, char* argv []) {
     lambda = atof(argv[2]);
     Nr = atoi(argv[3]);
     Nc = atoi(argv[4]);
+    img_path = argv[5];
+
   }
 
   time2 = get_time();
@@ -105,7 +108,7 @@ int main(int argc, char* argv []) {
   image_ori_elem = image_ori_rows * image_ori_cols;
   image_ori = (FP*)malloc(sizeof(FP) * image_ori_elem);
 
-  const char* input_image_path = "./input.pgm";
+  const char* input_image_path = img_path.c_str();
   if ( !read_graphics( input_image_path, image_ori, image_ori_rows, image_ori_cols, 1) ) {
     fprintf(stderr, "ERROR: failed to read input image at %s\n", input_image_path);
     if (image_ori != NULL) free(image_ori);
@@ -161,7 +164,7 @@ int main(int argc, char* argv []) {
   jW[0]    = 0;                             // changes IMAGE leftmost column index from -1 to 0
   jE[Nc-1] = Nc-1;                          // changes IMAGE rightmost column index from Nc to Nc-1
 
-  synergy::queue q(sycl::gpu_selector_v, sycl::property_list{sycl::property::queue::enable_profiling(), sycl::property::queue::in_order()});
+  synergy::queue q(sycl::gpu_selector_v);
 // #ifdef USE_GPU
 //   synergy::queue q(sycl::gpu_selector_v, sycl::property::queue::in_order());
 // #else
