@@ -47,13 +47,13 @@ def write_line(config_file_path, config, bench_df, kernel):
         min_app_core_freq = bench_df.loc[bench_df['kernel_name'] == kernel, 'min_app_core_freq [MHz]'].values[0]
         line = f"{kernel} {min_app_core_freq} KEEP\n"
     elif config == "KERNEL":
-        core_freq = bench_df.loc[bench_df['kernel_name'] == kernel, 'core_freq [MHz]'].values[0]
+        core_freq = bench_df.loc[bench_df['kernel_name'] == kernel, 'min_edp_core_freq [MHz]'].values[0]
         line = f"{kernel} {core_freq} KEEP\n"
-    
     # In phase-aware we use the same format as KERNEL. After the script we have to change manually the KEEP and NO_KEEP option so that
     # at runtime we can change the frequency only at the start of each phase.
     elif config == "PHASE":
-        core_freq = bench_df.loc[bench_df['kernel_name'] == kernel, 'core_freq [MHz]'].values[0]
+        # Here we are selecting the frequency that minimize EDP
+        core_freq = bench_df.loc[bench_df['kernel_name'] == kernel, 'min_edp_core_freq [MHz]'].values[0]
         line = f"{kernel} {core_freq} KEEP\n"
     else:
         raise ValueError(f"Unknown configuration type: {config}")
@@ -83,7 +83,7 @@ def main():
             if "APP" == config:
                 # For APP configuration we need the min_app_core_freq
                 app_core_freq = bench_df['min_app_core_freq [MHz]'].values[0]
-            
+
                 
             # generate the path to the configuration file
             config_path = os.path.join(out_config_dir, config.lower())
