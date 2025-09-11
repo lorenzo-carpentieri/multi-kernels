@@ -32,11 +32,22 @@ def main():
         csv_bench_path = os.path.join(csv_dir, f"{bench}.csv")
         # Read the csv file for the benchmark
         app_df = pd.read_csv(csv_bench_path)
+        # Add the EDP to the dataframe so that we can also have the frequency that optimize the energy and performance
+        # This frequncy can be bettere when we have small kernels that are not big enough to have considerable energy values
+        app_df['edp'] = app_df['mean_kernel_energy[j]'] * (app_df['mean_times[ms]']/1000) 
+        
+        min_edp_kernel_df = app_df.loc[app_df.groupby("kernel_name")["edp"].idxmin()]
+        min_edp_kernel_df = min_edp_kernel_df[["app_name", "kernel_name", "core_freq [MHz]", "edp"]]
+        min_edp_kernel_df = min_edp_kernel_df.rename(columns={
+            'core_freq [MHz]': 'min_edp_core_freq [MHz]',
+            'edp': 'min_edp [j]'
+        })
         
         min_energy_kernel_df = app_df.loc[app_df.groupby("kernel_name")["mean_kernel_energy[j]"].idxmin()]
+       
         min_energy_app_df = app_df.loc[app_df.groupby("app_name")["mean_total_device_energy[j]"].idxmin()]
         min_energy_app_df = min_energy_app_df[["app_name", "core_freq [MHz]", "mean_total_device_energy[j]"]]
-        
+
         min_energy_kernel_df = min_energy_kernel_df[["app_name", "kernel_name", "core_freq [MHz]", "mean_kernel_energy[j]"]]
         min_energy_app_df = min_energy_app_df[['app_name','core_freq [MHz]','mean_total_device_energy[j]']].drop_duplicates(subset='app_name')
 
@@ -46,6 +57,12 @@ def main():
                 'core_freq [MHz]': 'min_app_core_freq [MHz]',
                 'mean_total_device_energy[j]': 'min_device_energy [j]'
             }),
+            on='app_name',
+            how='left'   # left preserva tutte le righe di min_energy_kernel_df
+        )
+
+        min_energy_kernel_df = min_energy_kernel_df.merge(
+            min_edp_kernel_df,
             on='app_name',
             how='left'   # left preserva tutte le righe di min_energy_kernel_df
         )
