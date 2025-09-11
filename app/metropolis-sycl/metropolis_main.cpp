@@ -241,6 +241,10 @@ int main(int argc, char **argv) {
 
     /* reset gpu data with a new seed from the sequential PRNG */
     seed = gpu_pcg32_random_r(&hpcgs, &hpcgi);
+    // This kernel is used for changing the frequency before the loop. So that the freq. change can be done once
+    q.submit(0, freqMan.getAndSetFreq("metropolis_phase_1"), [&](sycl::handler& cgh) {
+      
+    }).wait();
 
     for (int k = 0; k < ar; ++k) {
       event_list.push_back(q.submit(0, freqMan.getAndSetFreq("kernel_reset"), [&](sycl::handler &cgh) {
@@ -263,7 +267,7 @@ int main(int argc, char **argv) {
       kernel_names.push_back("kernel_gpupcg_setup");
     }
 
-    q.submit(0, freqMan.getAndSetFreq("metropolis_phase"), [&](sycl::handler& cgh) {
+    q.submit(0, freqMan.getAndSetFreq("metropolis_phase_2"), [&](sycl::handler& cgh) {
       
     }).wait();
 
